@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.16)
+set(project_name TPF2-Timetables-Helper)
+project(${project_name} CXX)
+set(CMAKE_CXX_STANDARD 17)
+
+file(GLOB_RECURSE source_files "src/*.cpp")
+file(GLOB_RECURSE source_lib "lib/*.cpp")
+add_compile_options(-g -std=c++17 -O2)
+include_directories(src/4)
+include_directories(src/3)
+include_directories(src/2)
+include_directories(src/1)
+add_executable(TPF2-Timetables-Helper ${source_files} ${source_lib})
