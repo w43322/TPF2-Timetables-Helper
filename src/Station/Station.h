@@ -7,6 +7,9 @@
 
 class Station
 {
+    friend class StringHelper;
+    friend class TimeTable;
+
 // DATA
 public:
     enum Attr {Attr_conditionType, Attr_inboundTime, Attr_stationID};
@@ -19,7 +22,6 @@ private:
     // self defined
     std::vector<ArrDepTime> arrdepTimes;
     Time debounceTime;
-    friend class StringHelper;
 
 // FUNCTIONS
 public:

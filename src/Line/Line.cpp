@@ -9,3 +9,7 @@ void Line::SetAttribute(Attr attr, bool b)
         return;
     }
 }
+void Line::AddStation(const Station& station)
+{
+    stations.push_back(station);
+}
