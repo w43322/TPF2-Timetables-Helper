@@ -146,10 +146,10 @@ void TimeTable::OutputToFile(std::ofstream &ofs)
             ofs << "\t\t\t\t\t\t},\n";
             
             // inboundTime
-            ofs << "\t\t\t\t\t\tinboundTime = " << station.inboundTime << '\n';
+            ofs << "\t\t\t\t\t\tinboundTime = " << station.inboundTime << ",\n";
 
             // stationID
-            ofs << "\t\t\t\t\t\tstationID = " << station.stationID << '\n';
+            ofs << "\t\t\t\t\t\tstationID = " << station.stationID << ",\n";
 
             // station end
             ofs << "\t\t\t\t\t},\n";
