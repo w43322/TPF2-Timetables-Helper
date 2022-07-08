@@ -1,87 +1,26 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <vector>
 
-class Station
+#include "Line.h"
+#include "Station.h"
+#include "StringHelper.h"
+#include "Timing.h"
+
+#define DEBUG_OUTPUT
+
+class DebugOutput
 {
-// DATA
 public:
-    enum Attr {Attr_conditionType, Attr_inboundTime, Attr_stationID};
-private:
-    // attributes
-    enum Type {Type_ArrDep, Type_debounce, Type_None} conditionType;
-    int inboundTime;
-    int stationID;
-
-// FUNCTIONS
-public:
-    void SetAttribute(Attr attr, Type type)
+    template <typename T>
+    void operator << (const T &str)
     {
-        switch (attr)
-        {
-        case Attr_conditionType:
-            conditionType = type;
-            return;
-        default:
-            return;
-        }
+    #ifdef DEBUG_OUTPUT
+        std::cout << str << '\n';
+    #endif
     }
-    void SetAttribute(Attr attr, int i)
-    {
-        switch (attr)
-        {
-        case Attr_inboundTime:
-            inboundTime = i;
-            return;
-        case Attr_stationID:
-            stationID = i;
-            return;
-        default:
-            return;
-        }
-    }
-};
-
-class Line
-{
-// DATA
-public:
-    enum Attr {Attr_hasTimeTable};
-private:
-    // self defined
-    int lineID;
-
-    // attributes
-    bool hasTimeTable;
-
-// FUNCTIONS
-public:
-    Line(int id): lineID(id)
-    {
-
-    }
-    void SetAttribute(Attr attr, bool b)
-    {
-        switch (attr)
-        {
-        case Attr_hasTimeTable:
-            hasTimeTable = b;
-            return;
-        }
-    }
-    static int GetIdFromString(std::string str)
-    {
-        str = str.substr(str.find('"') + 1);
-        str = str.substr(0, str.find('"'));
-        return stoi(str);
-    }
-    static bool GetBoolFromString(std::string str)
-    {
-        str = str.substr(str.find('=') + 2);
-        str = str.substr(0, str.find(','));
-        return str == "true";
-    }
-};
+} dout;
 
 std::map<int, std::string> stationName;
 std::map<int, std::string> lineName = 
@@ -121,11 +60,11 @@ int main(int argc, char **argv)
     while (text != "\t\t},") // ends reading a TIMETABLE (LINES) block
     {
         // construct a LINE
-        Line newLine(Line::GetIdFromString(text));
+        Line newLine(stoi(StringHelper::GetStringFromString(text)));
 
         // read "hasTimetable" attribute
         std::getline(srcLuaFile, text); // hasTimetable = true,
-        newLine.SetAttribute(Line::Attr_hasTimeTable, Line::GetBoolFromString(text));
+        newLine.SetAttribute(Line::Attr_hasTimeTable, StringHelper::GetBoolFromString(text));
 
         // read stations block
         std::getline(srcLuaFile, text); // stations = {
@@ -134,7 +73,7 @@ int main(int argc, char **argv)
         while (text != "\t\t\t\t},") // ends reading a STATIONS block
         {
             // construct a STATION
-                // TODO
+            Station newStation;
 
             // read conditions block
             std::getline(srcLuaFile, text); // conditions = {
@@ -142,26 +81,38 @@ int main(int argc, char **argv)
             while (text != "\t\t\t\t\t\t},") // ends reading a CONDITION block
             {
                 // analyze format
-                if (text.back() == '{') // breaking line
+                if (text.back() == '{') // breaking line (ArrDep)
                 {
                     // get time
-                    std::getline(srcLuaFile, text);
+                    std::getline(srcLuaFile, text); // { 42, 15, 42, 35, },
                     while (text != "\t\t\t\t\t\t\t},") // ends reading a TIME block
                     {
                         // read time
-                            // TODO
+                        ArrDepTime time = StringHelper::GetArrDepTimeFromString(text);
                         // get new time
-                        std::getline(srcLuaFile, text);
+                        std::getline(srcLuaFile, text); // { 42, 15, 42, 35, },
                     }
                 }
-                // else: one line
+                // else: one liner (Others)
+                switch (text[7])
+                {
+                case 'd': // debounce = { 0, 0, },
+                    break;
+                case 't': // type = "ArrDep",
+                    newStation.SetConditionType(StringHelper::GetConditionTypeFromString(text));
+                    break;
+                case 'N': default:
+                    break;
+                }
                 // get new line for analyze
                 std::getline(srcLuaFile, text); // ArrDep | debounce | None | type
             }
             // read "inboundTime" attribute
-                // TODO
+            std::getline(srcLuaFile, text); // inboundTime = 0,
+            newStation.SetAttribute(Station::Attr_inboundTime, StringHelper::GetIntFromString(text));
             // read "stationID" attribute
-                // TODO
+            std::getline(srcLuaFile, text); // stationID = 155237,
+            newStation.SetAttribute(Station::Attr_stationID, StringHelper::GetIntFromString(text));
             // read next STATION
             std::getline(srcLuaFile, text); // },
             std::getline(srcLuaFile, text); // {
