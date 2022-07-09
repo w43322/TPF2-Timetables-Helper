@@ -25,10 +25,11 @@ private:
 
 // FUNCTIONS
 public:
-    void AppendArrDepTime(const ArrDepTime& adt);
+    void AppendArrDepTime(const ArrDepTime &adt);
     void SetAttribute(Attr attr, Type type);
     void SetAttribute(Attr attr, int i);
     void SetConditionType(Type t);
+    void SetDebounceTime(const Time &dbt);
 };
 
 #endif

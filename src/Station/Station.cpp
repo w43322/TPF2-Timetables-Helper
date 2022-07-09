@@ -33,3 +33,7 @@ void Station::SetConditionType(Type t)
 {
     conditionType = t;
 }
+void Station::SetDebounceTime(const Time &dbt)
+{
+    debounceTime = dbt;
+}

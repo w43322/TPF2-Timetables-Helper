@@ -9,8 +9,11 @@ class Time
 public:
     Time(){}
     Time(uint8_t t1, uint8_t t2): mm(t1), ss(t2) {}
+    Time operator +(int s);
+    Time operator +(const Time &t);
 private:
     uint8_t mm, ss;
+    void Normalize();
 };
 
 class ArrDepTime

@@ -4,13 +4,20 @@ void TimeTable::AddLine(const Line& line)
 {
     lines.push_back(line);
 }
-void TimeTable::ReadFromFile(std::ifstream &ifs)
+void TimeTable::ReadFromFile(std::ifstream &ifs,
+                        std::stringstream &before,
+                        std::stringstream &after)
 {
     // lua file parser
     std::string text;
     // try to find the start of timetable block
-    while (text != "\t\ttimetable = {")
+    while (true)
+    {
         std::getline(ifs, text);
+        if (text == "\t\ttimetable = {")
+            break;
+        before << text << '\n';
+    }
 
     // read timetable block
     // read LINE block
@@ -54,13 +61,14 @@ void TimeTable::ReadFromFile(std::ifstream &ifs)
                 // else: one liner (Others)
                 switch (text[7])
                 {
-                case 'd': // debounce = { 0, 0, },
-                    // TODO
+                case 'd':
+                    if (text[20] != '}') // debounce = { 0, 0, },
+                        newStation.SetDebounceTime(StringHelper::GetDebounceTimeFromString(text));
                     break;
                 case 't': // type = "ArrDep",
                     newStation.SetConditionType(StringHelper::GetConditionTypeFromString(text));
                     break;
-                case 'N': default:
+                case 'N': default: // type = "None",
                     break;
                 }
                 // get new line for analyze
@@ -84,9 +92,22 @@ void TimeTable::ReadFromFile(std::ifstream &ifs)
         std::getline(ifs, text); // },
         std::getline(ifs, text); // ["109701"] = {
     }
+
+    // write remainder of file
+    while (true)
+    {
+        std::getline(ifs, text);
+        if (text.empty())
+            break;
+        after << text << '\n';
+    }
 }
-void TimeTable::OutputToFile(std::ofstream &ofs)
+void TimeTable::OutputToFile(std::ofstream &ofs,
+                    const std::stringstream &before,
+                    const std::stringstream &after)
 {
+    ofs << before.str();
+
     // timetable start
     ofs << "\t\ttimetable = {\n";
 
@@ -133,8 +154,13 @@ void TimeTable::OutputToFile(std::ofstream &ofs)
                 ofs << "\t\t\t\t\t\t\ttype = \"ArrDep\",\n";
                 break;
             case Station::Type_debounce:
-                // TODO
-                ofs << "\t\t\t\t\t\t\ttype = \"ArrDep\",\n";
+                // debounce = { 0, 0, },
+                ofs << "\t\t\t\t\t\t\tdebounce = { ";
+                ofs << std::to_string(station.debounceTime.mm);
+                ofs << ", ";
+                ofs << std::to_string(station.debounceTime.ss);
+                ofs << ", },\n";
+                ofs << "\t\t\t\t\t\t\ttype = \"debounce\",\n";
                 break;
             case Station::Type_None:
                 ofs << "\t\t\t\t\t\t\tNone = { },\n";
@@ -163,5 +189,7 @@ void TimeTable::OutputToFile(std::ofstream &ofs)
     }
 
     // timetable end
-    ofs << "\t\t},";
+    ofs << "\t\t},\n";
+
+    ofs << after.str();
 }
