@@ -1,4 +1,6 @@
 #include <getopt.h>
+#include <cstring>
+#include <cctype>
 
 #include "LuaIO.h"
 
@@ -11,12 +13,13 @@ int main(int argc, char **argv)
     enum Operation {Help, Offset} operation = Help;
 
     // Offset Operation
-    enum OffsetSelect {None, Arr, Dep, ArrDep} offsetSelect = None;
-    int OffsetTime = 0;
+    TimeTable::OffsetSelect offsetSelect = TimeTable::Select_None;
+    int offsetTime = 0;
+    std::vector<int> offsetIDs;
 
     //printf("初始值：optind = %d，opterr = %d\n", optind, opterr);
 
-    while ((ch = getopt(argc, argv, "r:w:os:t:")) != -1)
+    while ((ch = getopt(argc, argv, "r:w:os:t:i:")) != -1)
     {
         //printf("开始解析参数：optind = %d\n", optind);
         switch (ch) 
@@ -36,31 +39,69 @@ int main(int argc, char **argv)
         case 's':
             switch (optarg[0])
             {
-                case 'a': case 'A':
-                    offsetSelect = Arr;
-                    break;
-                case 'd': case 'D':
-                    offsetSelect = Dep;
-                    break;
-                default:
-                    offsetSelect = None;
-                    break;
+            case 'a': case 'A':
+                offsetSelect = TimeTable::Select_Arr;
+                break;
+            case 'd': case 'D':
+                offsetSelect = TimeTable::Select_Dep;
+                break;
+            default:
+                offsetSelect = TimeTable::Select_None;
+                break;
             }
             switch (optarg[1])
             {
-                case 'a': case 'A':
-                    offsetSelect = (OffsetSelect)(offsetSelect | Arr);
-                    break;
-                case 'd': case 'D':
-                    offsetSelect = (OffsetSelect)(offsetSelect | Dep);
-                    break;
-                default:
-                    break;
+            case 'a': case 'A':
+                offsetSelect = (TimeTable::OffsetSelect)(offsetSelect | TimeTable::Select_Arr);
+                break;
+            case 'd': case 'D':
+                offsetSelect = (TimeTable::OffsetSelect)(offsetSelect | TimeTable::Select_Dep);
+                break;
+            default:
+                break;
             }
-            printf("    Offset Select: %s\n", optarg);
+            switch (offsetSelect)
+            {
+            case TimeTable::Select_None:
+                printf("    Offset Select: None\n", optarg);
+                break;
+            case TimeTable::Select_Arr:
+                printf("    Offset Select: Arr\n", optarg);
+                break;
+            case TimeTable::Select_Dep:
+                printf("    Offset Select: Dep\n", optarg);
+                break;
+            case TimeTable::Select_ArrDep:
+                printf("    Offset Select: ArrDep\n", optarg);
+                break;
+            }
             break;
         case 't':
-            printf("    Offset Time: %s sec(s)\n", optarg);
+            offsetTime = std::stoi(optarg);
+            printf("    Offset Time: %d sec(s)\n", offsetTime);
+            break;
+        case 'i':
+            int num = 0;
+            printf("    Offset Line IDs: ");
+            for (size_t i = 0, siz = strlen(optarg); i <= siz; ++i)
+            {
+                char chr = optarg[i];
+                if (isdigit(chr))
+                {
+                    num *= 10;
+                    num += chr - '0';
+                }
+                else
+                {
+                    offsetIDs.push_back(num);
+                    num = 0;
+                }
+            }
+            for (auto &&id : offsetIDs)
+                printf("%d, ", id);
+            if (offsetIDs.empty())
+                printf("   (null)");
+            printf("\n");
             break;
         }
     }
@@ -78,18 +119,29 @@ int main(int argc, char **argv)
     switch (operation)
     {
     case Offset:
-        if (offsetSelect == None)
+        if (offsetSelect == TimeTable::Select_None)
         {
-            printf("Error: Offset mode not selected!\n    Use \"-s a|d|ad\" to select offset mode, \"-h\" for more info.\nExiting...\n");
+            printf("Error: Offset mode not selected!\n    "
+                "Use \"-s a|d|ad\" to select offset mode, \"-h\" for more info.\nExiting...\n");
+            break;
         }
-        break;
+        if (offsetTime == 0)
+        {
+            printf("Error: Offset time not selected or equals to zero!\n    "
+                "Use \"-t xx\" to select offset mode, \"-h\" for more info.\nExiting...\n");
+            break;
+        }
+        if (offsetIDs.empty())
+            printf("Warning: You didn't specify which lines to offset, defaulting to all lines...\n");
+        luaio.tt.Offset(offsetIDs, offsetTime, offsetSelect);
     }
 
-    // ./build/TPF2-Timetables-Helper -r "./input.lua" -w "./output.lua" -o -t -55 -s ad
+    // ./build/TPF2-Timetables-Helper -r "./test_recording.sav.lua" -w "./output.lua" -o -t 1 -s ad -i 123
 
-    /*
+    printf("Writing to specified output file...\n");
+    luaio.Write();
 
-    luaio.Write();*/
+    printf("Program finished.\n");
 
     return 0;
 }

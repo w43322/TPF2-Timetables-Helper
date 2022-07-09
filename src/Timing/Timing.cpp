@@ -3,6 +3,8 @@
 Time Time::operator +(int s)
 {
     ss += s;
+    if (s < 0)
+        ss += 3600;
     Normalize();
     return *this;
 }

@@ -2,12 +2,19 @@
 
 void TimeTable::AddLine(const Line& line)
 {
-    lines.push_back(line);
+    lines.insert(std::make_pair(line.lineID, line));
 }
 void TimeTable::ReadFromFile(std::ifstream &ifs,
                         std::stringstream &before,
                         std::stringstream &after)
 {
+    // check if file is open
+    if (!ifs.is_open())
+    {
+        printf("Error: Input file error!\n");
+        return;
+    }
+
     // lua file parser
     std::string text;
     // try to find the start of timetable block
@@ -106,13 +113,22 @@ void TimeTable::OutputToFile(std::ofstream &ofs,
                     const std::stringstream &before,
                     const std::stringstream &after)
 {
+    // check if file is open
+    if (!ofs.is_open())
+    {
+        printf("Error: Output file error!\n");
+        return;
+    }
+    
     ofs << before.str();
 
     // timetable start
     ofs << "\t\ttimetable = {\n";
 
-    for (auto &&line : lines)
+    for (auto &&_line : lines)
     {
+        auto &&line = _line.second;
+
         // skip lines without timetable
         if (!line.hasTimeTable)
             continue;
@@ -192,4 +208,42 @@ void TimeTable::OutputToFile(std::ofstream &ofs,
     ofs << "\t\t},\n";
 
     ofs << after.str();
+}
+void TimeTable::Offset(const std::vector<int> &lineIDs,
+                    int seconds,
+                    OffsetSelect sel)
+{
+    if(!lineIDs.empty()) for (auto &&id : lineIDs)
+    {
+        if (lines.find(id) == lines.end())
+        {
+            printf("Warning: Line ID %d not found, skipping...\n", id);
+            continue;
+        }
+        auto &&line = lines.at(id);
+        for (auto &&station : line.stations)
+        {
+            for (auto &&tim : station.arrdepTimes)
+            {
+                if (sel & 0b01) // Arr
+                    tim.arr = tim.arr + seconds;
+                if (sel & 0b10) // Deo
+                    tim.dep = tim.dep + seconds;
+            }
+        }
+    }
+    else for (auto &&_line : lines)
+    {
+        auto &&line = _line.second;
+        for (auto &&station : line.stations)
+        {
+            for (auto &&tim : station.arrdepTimes)
+            {
+                if (sel & 0b01) // Arr
+                    tim.arr = tim.arr + seconds;
+                if (sel & 0b10) // Deo
+                    tim.dep = tim.dep + seconds;
+            }
+        }
+    }
 }

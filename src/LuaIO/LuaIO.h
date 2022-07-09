@@ -7,7 +7,6 @@ class LuaIO
 private:
     std::stringstream before;
     std::stringstream after;
-    TimeTable tt;
     std::string inPath;
     std::string outPath;
 public:
@@ -15,4 +14,5 @@ public:
         const std::string &o): inPath(i), outPath(o) {}
     void Read();
     void Write();
+    TimeTable tt;
 };

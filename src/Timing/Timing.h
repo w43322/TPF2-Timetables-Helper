@@ -8,11 +8,11 @@ class Time
     friend class TimeTable;
 public:
     Time(){}
-    Time(uint8_t t1, uint8_t t2): mm(t1), ss(t2) {}
+    Time(int t1, int t2): mm(t1), ss(t2) {}
     Time operator +(int s);
     Time operator +(const Time &t);
 private:
-    uint8_t mm, ss;
+    int mm, ss;
     void Normalize();
 };
 
@@ -20,7 +20,7 @@ class ArrDepTime
 {
     friend class TimeTable;
 public:
-    ArrDepTime(uint8_t t1, uint8_t t2, uint8_t t3, uint8_t t4): arr(t1, t2), dep(t3, t4) {}
+    ArrDepTime(int t1, int t2, int t3, int t4): arr(t1, t2), dep(t3, t4) {}
 private:
     Time arr, dep;
 };

@@ -7,6 +7,7 @@
 
 class Station
 {
+    friend class Line;
     friend class StringHelper;
     friend class TimeTable;
 
