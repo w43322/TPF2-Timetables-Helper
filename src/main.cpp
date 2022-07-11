@@ -10,18 +10,23 @@ int main(int argc, char **argv)
 
     std::string inPath, outPath;
 
-    enum Operation {Help, Offset} operation = Help;
+    enum Operation {Help, Offset, Generate} operation = Help;
 
     // Offset Operation
     TimeTable::OffsetSelect offsetSelect = TimeTable::Select_None;
     int offsetTime = 0;
     std::vector<int> offsetIDs;
 
+    // Generate Operation
+    std::ifstream srcCsvFile;
+    std::ofstream dstCsvFile;
+
     //printf("初始值：optind = %d，opterr = %d\n", optind, opterr);
 
-    while ((ch = getopt(argc, argv, "r:w:os:t:i:")) != -1)
+    while ((ch = getopt(argc, argv, "r:w:os:t:i:gc:v:")) != -1)
     {
         //printf("开始解析参数：optind = %d\n", optind);
+        int num = 0;
         switch (ch) 
         {
         case 'r':
@@ -81,7 +86,6 @@ int main(int argc, char **argv)
             printf("    Offset Time: %d sec(s)\n", offsetTime);
             break;
         case 'i':
-            int num = 0;
             printf("    Offset Line IDs: ");
             for (size_t i = 0, siz = strlen(optarg); i <= siz; ++i)
             {
@@ -102,6 +106,28 @@ int main(int argc, char **argv)
             if (offsetIDs.empty())
                 printf("   (null)");
             printf("\n");
+            break;
+        case 'g':
+            printf("Operation: GENERATE TBTD\n");
+            operation = Generate;
+            break;
+        case 'c':
+            srcCsvFile = std::ifstream(optarg);
+            printf("    TBTD Input File Path: \"%s\n\"", optarg);
+            if (!srcCsvFile.is_open())
+            {
+                printf("Error: Failed to open TBTD input file!\nExiting...\n");
+                return 0;
+            }
+            break;
+        case 'v':
+            dstCsvFile = std::ofstream(optarg);
+            printf("    TBTD Output File Path: \"%s\n\"", optarg);
+            if (!dstCsvFile.is_open())
+            {
+                printf("Error: Failed to open or create TBTD output file!\nExiting...\n");
+                return 0;
+            }
             break;
         }
     }
@@ -134,12 +160,17 @@ int main(int argc, char **argv)
         if (offsetIDs.empty())
             printf("Warning: You didn't specify which lines to offset, defaulting to all lines...\n");
         luaio.tt.Offset(offsetIDs, offsetTime, offsetSelect);
+        printf("Writing to specified output file...\n");
+        luaio.Write();
+        break;
+    case Generate:
+
+        break;
     }
 
     // ./build/TPF2-Timetables-Helper -r "./test_recording.sav.lua" -w "./output.lua" -o -t 1 -s ad -i 123
 
-    printf("Writing to specified output file...\n");
-    luaio.Write();
+    // ./build/TPF2-Timetables-Helper -r "./test_recording.sav.lua" -w "./output.lua" -g -c "./input.csv" -v "./output.csv"
 
     printf("Program finished.\n");
 

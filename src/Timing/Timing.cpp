@@ -23,3 +23,13 @@ void Time::Normalize()
     ss %= 60;
     mm %= 60;
 }
+
+bool Time::operator <(const Time &t)
+{
+    return mm < t.mm || ss < t.ss;
+}
+
+bool ArrDepTime::operator <(const ArrDepTime &t)
+{
+    return dep < t.dep;
+}
