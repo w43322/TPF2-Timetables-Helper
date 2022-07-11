@@ -7,6 +7,12 @@ void LuaIO::Read()
 
     // read
     tt.ReadFromFile(srcLuaFile, before, after);
+
+    if (!aliasPath.empty())
+    {
+        std::ifstream aliasFile(aliasPath);
+        tt.ReadAlias(aliasFile);
+    }
 }
 
 void LuaIO::Write()

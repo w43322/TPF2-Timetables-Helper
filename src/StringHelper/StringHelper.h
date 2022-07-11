@@ -15,6 +15,7 @@ public:
     static Time GetDebounceTimeFromString(const std::string &str);
     static std::string GetStringFromString(std::string str);
     static Station::Type GetConditionTypeFromString(const std::string &str);
+    static std::vector<std::string> GetCellsFromLine(const std::string &str);
 };
 
 #endif

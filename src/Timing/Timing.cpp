@@ -24,12 +24,27 @@ void Time::Normalize()
     mm %= 60;
 }
 
-bool Time::operator <(const Time &t)
+bool Time::operator <(const Time &t) const
 {
-    return mm < t.mm || ss < t.ss;
+    return mm < t.mm || (mm == t.mm && ss < t.ss);
 }
 
-bool ArrDepTime::operator <(const ArrDepTime &t)
+bool ArrDepTime::operator <(const ArrDepTime &t) const
 {
-    return dep < t.dep;
+    return dep < t.dep || (dep == t.dep && arr < t.arr);
+}
+
+bool Time::operator ==(const Time &t) const
+{
+    return mm == t.mm && ss == t.ss;
+}
+
+bool ArrDepTime::operator ==(const ArrDepTime &t) const
+{
+    return dep == t.dep && arr == t.arr;
+}
+
+int Time::Seconds()
+{
+    return mm * 60 + ss;
 }

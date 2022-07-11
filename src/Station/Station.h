@@ -2,6 +2,7 @@
 #define STATION_H
 
 #include <vector>
+#include <string>
 
 #include "Timing.h"
 
@@ -23,6 +24,7 @@ private:
     // self defined
     std::vector<ArrDepTime> arrdepTimes;
     Time debounceTime;
+    std::string name = "Alias";
 
 // FUNCTIONS
 public:

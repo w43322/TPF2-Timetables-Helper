@@ -12,6 +12,7 @@ class TimeTable
 {
 private:
     std::map<int, Line> lines;
+    std::map<std::string, int> aliases;
 public:
     enum OffsetSelect {Select_None, Select_Arr, Select_Dep, Select_ArrDep};
     void AddLine(const Line& line);
@@ -24,6 +25,8 @@ public:
     void Offset(const std::vector<int> &lineIDs,
                 int seconds,
                 OffsetSelect sel);
+    void ReadAlias(std::ifstream &ifs);
+    void GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs);
 };
 
 #endif

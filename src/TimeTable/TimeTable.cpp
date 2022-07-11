@@ -247,3 +247,166 @@ void TimeTable::Offset(const std::vector<int> &lineIDs,
         }
     }
 }
+
+void TimeTable::ReadAlias(std::ifstream &ifs)
+{
+    // check if file is open
+    if (!ifs.is_open())
+    {
+        printf("Error: Alias file error!\n");
+        return;
+    }
+    
+    // keep reading file until end
+    while (true)
+    {
+        std::string text;
+        std::vector<std::string> cells;
+        std::getline(ifs, text);
+        
+        if (text.empty())
+            break;
+        
+        cells = StringHelper::GetCellsFromLine(text);
+        
+        int id = stoi(cells[0]);
+
+        if (lines.find(id) == lines.end())
+            printf("Warning: Line ID %d not found, "
+                    "its aliases will not be added...\n", id);
+        else
+        {
+            lines.at(id).name = cells[1];
+            for (size_t i = 1, siz = cells.size(); i < siz; ++i)
+            {
+                std::transform(cells[i].begin(), cells[i].end(), cells[i].begin(), ::tolower);
+                aliases.insert(std::make_pair(cells[i], id));
+            }
+        }
+    }
+
+}
+
+void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
+{
+    std::string text;
+    std::vector<std::string> cells;
+
+    // get a line
+    std::getline(ifs, text);
+    cells = StringHelper::GetCellsFromLine(text);
+    while (cells.size() == 1)
+    {
+        std::vector<int> tripStations/*stores the indexes of stations*/, indexes;
+        std::vector<std::vector<int>> trips; // stores the index in Stations::times, trips[trip][staIDX] = timIDX
+
+        if (cells[0] == "")
+            break;
+
+        int id;
+        if (isdigit(cells[0][0]))
+            id = std::stoi(cells[0]);
+        else
+        {
+            std::transform(cells[0].begin(), cells[0].end(), cells[0].begin(), ::tolower);
+            if (aliases.find(cells[0]) == aliases.end())
+            {
+                printf("Error: \"%s\" is not a valid alias!\n"
+                    "Exiting...\n", cells[0].c_str());
+                return;
+            }
+            id = aliases.at(cells[0]);
+        }
+        //printf("\"%s\"\n", cells[0].c_str());
+
+        if (lines.find(id) == lines.end())
+        {
+            printf("Error: Line ID %d not found while generating it's TBTD!\n"
+                "Exiting...\n", id);
+            return;
+        }
+
+        auto &&line = lines.at(id);
+
+        int timSiz = line.SortStationTimes();
+        if (timSiz == 0)
+            return;
+        
+        // get stations
+        std::getline(ifs, text);
+        cells = StringHelper::GetCellsFromLine(text);
+        
+        // find refrence trip
+        while (cells.size() == 5)
+        {
+            // get index
+            int stationID = std::stoi(cells[0]);
+            int staIDX, timeIDX;
+            /*printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
+                cells[0].c_str(),
+                cells[1].c_str(),
+                cells[2].c_str(),
+                cells[3].c_str(),
+                cells[4].c_str());*/
+            line.GetIndex(stationID, staIDX, timeIDX,
+                    ArrDepTime(
+                        std::stoi(cells[1]),
+                        std::stoi(cells[2]),
+                        std::stoi(cells[3]),
+                        std::stoi(cells[4])));
+
+            if (staIDX == -1)
+            {
+                printf("Error: Station %d not found!\n"
+                    "Exiting...\n", stationID);
+                return;
+            }
+            tripStations.push_back(staIDX);
+
+
+            if (timeIDX == -1)
+            {
+                printf("Error: ArrDepTime not found in station %d!\n"
+                    "Exiting...\n", stationID);
+                return;
+            }
+            indexes.push_back(timeIDX);
+
+            // get next station
+            std::getline(ifs, text);
+            cells = StringHelper::GetCellsFromLine(text);
+        }
+        trips.push_back(indexes);
+        
+        // find other trips
+        while (true)
+        {
+            for (auto &&idx : indexes)
+            {
+                ++idx;
+                if (idx == timSiz)
+                    idx = 0;
+            }
+            if (indexes == trips[0])
+                break;
+            else
+                trips.push_back(indexes);
+        }
+
+        ofs << id << '\n';
+        for (size_t i = 0, siz = tripStations.size(); i < siz; ++i)
+        {
+            auto &&station = line.stations[tripStations[i]];
+            ofs << station.stationID << ",\"" << station.name << "\",";
+            //ofs << tripStations[i] << ':';
+            for (auto &&trip : trips) // num. elem in trips: stations
+            {
+                auto &&timeIDX = trip[i];
+                //ofs << timeIDX << ',';
+                ofs << station.arrdepTimes[timeIDX].arr.Seconds() << ',';
+                ofs << station.arrdepTimes[timeIDX].dep.Seconds() << ',';
+            }
+            ofs << '\n';
+        }
+    }
+}

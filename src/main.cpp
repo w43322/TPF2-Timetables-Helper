@@ -8,7 +8,7 @@ int main(int argc, char **argv)
 {
     int ch;
 
-    std::string inPath, outPath;
+    std::string inPath, outPath, aliasPath;
 
     enum Operation {Help, Offset, Generate} operation = Help;
 
@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
     //printf("初始值：optind = %d，opterr = %d\n", optind, opterr);
 
-    while ((ch = getopt(argc, argv, "r:w:os:t:i:gc:v:")) != -1)
+    while ((ch = getopt(argc, argv, "r:w:os:t:i:gc:v:a:")) != -1)
     {
         //printf("开始解析参数：optind = %d\n", optind);
         int num = 0;
@@ -68,16 +68,16 @@ int main(int argc, char **argv)
             switch (offsetSelect)
             {
             case TimeTable::Select_None:
-                printf("    Offset Select: None\n", optarg);
+                printf("    Offset Select: None\n");
                 break;
             case TimeTable::Select_Arr:
-                printf("    Offset Select: Arr\n", optarg);
+                printf("    Offset Select: Arr\n");
                 break;
             case TimeTable::Select_Dep:
-                printf("    Offset Select: Dep\n", optarg);
+                printf("    Offset Select: Dep\n");
                 break;
             case TimeTable::Select_ArrDep:
-                printf("    Offset Select: ArrDep\n", optarg);
+                printf("    Offset Select: ArrDep\n");
                 break;
             }
             break;
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
             break;
         case 'c':
             srcCsvFile = std::ifstream(optarg);
-            printf("    TBTD Input File Path: \"%s\n\"", optarg);
+            printf("    TBTD Input File Path: \"%s\"\n", optarg);
             if (!srcCsvFile.is_open())
             {
                 printf("Error: Failed to open TBTD input file!\nExiting...\n");
@@ -122,12 +122,16 @@ int main(int argc, char **argv)
             break;
         case 'v':
             dstCsvFile = std::ofstream(optarg);
-            printf("    TBTD Output File Path: \"%s\n\"", optarg);
+            printf("    TBTD Output File Path: \"%s\"\n", optarg);
             if (!dstCsvFile.is_open())
             {
                 printf("Error: Failed to open or create TBTD output file!\nExiting...\n");
                 return 0;
             }
+            break;
+        case 'a':
+            printf("Aliases File Path: \"%s\"\n", optarg);
+            aliasPath = optarg;
             break;
         }
     }
@@ -138,8 +142,11 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    if (aliasPath.empty())
+        printf("Warning: Alias file not specified!\n");
+
     // initialize LuaIO object
-    LuaIO luaio(inPath, outPath);
+    LuaIO luaio(inPath, outPath, aliasPath);
     luaio.Read();
 
     switch (operation)
@@ -164,13 +171,13 @@ int main(int argc, char **argv)
         luaio.Write();
         break;
     case Generate:
-
+        luaio.tt.GenerateTBTD(srcCsvFile, dstCsvFile);
         break;
     }
 
-    // ./build/TPF2-Timetables-Helper -r "./test_recording.sav.lua" -w "./output.lua" -o -t 1 -s ad -i 123
+    // ./build/TPF2-Timetables-Helper -r "./input.lua" -w "./output.lua" -a "./aliases.csv" -o -t 1 -s ad -i 123
 
-    // ./build/TPF2-Timetables-Helper -r "./test_recording.sav.lua" -w "./output.lua" -g -c "./input.csv" -v "./output.csv"
+    // ./build/TPF2-Timetables-Helper -r "./input.lua" -w "./output.lua" -a "./aliases.csv" -g -c "./input.csv" -v "./output.csv"
 
     printf("Program finished.\n");
 

@@ -53,3 +53,20 @@ Station::Type StringHelper::GetConditionTypeFromString(const std::string &str)
             return Station::Type_None;
     }
 }
+std::vector<std::string> StringHelper::GetCellsFromLine(const std::string &text)
+{
+    std::vector<std::string> cells;
+    std::string cell;
+    for (size_t i = 0, siz = text.length(); i <= siz; ++i)
+    {
+        char chr = text[i];
+        if (chr == ',' || chr == '\0')
+        {
+            cells.push_back(cell);
+            cell = "";
+            continue;
+        }
+        cell += chr;
+    }
+    return cells;
+}
