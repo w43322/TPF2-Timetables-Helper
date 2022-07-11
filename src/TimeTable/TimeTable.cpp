@@ -335,6 +335,8 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
         // get stations
         std::getline(ifs, text);
         cells = StringHelper::GetCellsFromLine(text);
+
+        int timeIDX_A = -1, timeIDX_A_, timeIDXoffs;
         
         // find refrence trip
         while (cells.size() == 5)
@@ -354,6 +356,9 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
                         std::stoi(cells[2]),
                         std::stoi(cells[3]),
                         std::stoi(cells[4])));
+            if (timeIDX_A == -1)
+                timeIDX_A = timeIDX;
+            timeIDX_A_ = timeIDX;
 
             if (staIDX == -1)
             {
@@ -376,6 +381,17 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
             std::getline(ifs, text);
             cells = StringHelper::GetCellsFromLine(text);
         }
+
+        // find offset between station A' and station A
+        timeIDXoffs = (timeIDX_A_ + timSiz - timeIDX_A) % timSiz;
+
+        // copy the table
+        auto tsCopy = std::vector<int>(tripStations.begin() + 1, tripStations.end() - 1);
+        tripStations.insert(tripStations.end(), tsCopy.begin(), tsCopy.end());
+        auto tidxCopy = std::vector<int>(indexes.begin() + 1, indexes.end() - 1);
+        for (auto &&tidx : tidxCopy)
+            tidx = (tidx + timeIDXoffs) % timSiz;
+        indexes.insert(indexes.end(), tidxCopy.begin(), tidxCopy.end());
         trips.push_back(indexes);
         
         // find other trips
@@ -410,3 +426,8 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
         }
     }
 }
+ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int destID, int startTime)
+{
+    return ArrDepTime(0,0,0,0);
+}
+

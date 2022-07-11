@@ -27,6 +27,7 @@ public:
                 OffsetSelect sel);
     void ReadAlias(std::ifstream &ifs);
     void GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs);
+    ArrDepTime LookupTBTD(std::ifstream &ifs, int lineID, int origID, int destID, int startTime);
 };
 
 #endif

@@ -22,6 +22,7 @@ private:
 class ArrDepTime
 {
     friend class TimeTable;
+    friend int main(int argc, char **argv);
 public:
     ArrDepTime(int t1, int t2, int t3, int t4): arr(t1, t2), dep(t3, t4) {}
     bool operator <(const ArrDepTime &t) const;
