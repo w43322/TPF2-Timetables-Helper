@@ -335,8 +335,6 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
         // get stations
         std::getline(ifs, text);
         cells = StringHelper::GetCellsFromLine(text);
-
-        int timeIDX_A = -1, timeIDX_A_, timeIDXoffs;
         
         // find refrence trip
         while (cells.size() == 5)
@@ -356,9 +354,6 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
                         std::stoi(cells[2]),
                         std::stoi(cells[3]),
                         std::stoi(cells[4])));
-            if (timeIDX_A == -1)
-                timeIDX_A = timeIDX;
-            timeIDX_A_ = timeIDX;
 
             if (staIDX == -1)
             {
@@ -381,17 +376,6 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
             std::getline(ifs, text);
             cells = StringHelper::GetCellsFromLine(text);
         }
-
-        // find offset between station A' and station A
-        timeIDXoffs = (timeIDX_A_ + timSiz - timeIDX_A) % timSiz;
-
-        // copy the table
-        auto tsCopy = std::vector<int>(tripStations.begin() + 1, tripStations.end() - 1);
-        tripStations.insert(tripStations.end(), tsCopy.begin(), tsCopy.end());
-        auto tidxCopy = std::vector<int>(indexes.begin() + 1, indexes.end() - 1);
-        for (auto &&tidx : tidxCopy)
-            tidx = (tidx + timeIDXoffs) % timSiz;
-        indexes.insert(indexes.end(), tidxCopy.begin(), tidxCopy.end());
         trips.push_back(indexes);
         
         // find other trips
@@ -428,6 +412,94 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
 }
 ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int destID, int startTime)
 {
-    return ArrDepTime(0,0,0,0);
+    std::string text;
+    std::vector<std::string> cells;
+    std::vector<std::vector<std::string>> table;
+
+    // get line with certain id
+    while (text != std::to_string(lineID) && (aliases.find(text) == aliases.end() || aliases.at(text) != lineID))
+    {
+        std::getline(ifs, text);
+        cells = StringHelper::GetCellsFromLine(text);
+    }
+
+    // get its stations
+    struct STATION
+    {
+        int id;
+        ArrDepTime tim;
+        STATION(int i, int t1, int t2) : id(i), tim(t1, t2) {}
+    };
+    std::vector<STATION> STATIONs;
+
+    std::getline(ifs, text);
+    cells = StringHelper::GetCellsFromLine(text);
+    while (cells.size() >= 4)
+    {
+        // add to table
+        table.push_back(cells);
+        // get next station
+        std::getline(ifs, text);
+        cells = StringHelper::GetCellsFromLine(text);
+    }
+
+    // read STATIONs from table
+    int col = 2;
+    do
+    {
+        int id, t1, t2;
+        bool skippedFirst = false;
+        for (auto &&row : table)
+        {
+            if (skippedFirst == false)
+            {
+                skippedFirst = true;
+                continue;
+            }
+            id = stoi(row[0]);
+            t1 = stoi(row[col]);
+            t2 = stoi(row[col + 1]);
+            STATIONs.push_back(STATION(id, t1, t2));
+        }
+
+        col = 2;
+        size_t colCnt = table.front().size();
+        while(col <= colCnt && t1 != stoi(table.front()[col])
+            && t2 != stoi(table.front()[col + 1]))
+            col += 2;
+    } while (col != 2);
+
+    // copy STATIONs and append to itself's end to prepare for lookup
+    STATIONs.insert(STATIONs.end(), STATIONs.begin(), STATIONs.end());
+
+    // Debug : Print all stations
+    //for (auto &&STATION : STATIONs)
+    //    printf("%d, %d, %d\n", STATION.id, STATION.tim.arr.Seconds(), STATION.tim.dep.Seconds());
+
+    int bestTime = INT_MAX;
+    ArrDepTime res(0, 0);
+    for (size_t i = 0, siz = STATIONs.size(); i + 1 < siz; ++i)
+    {
+        auto &&STATION_1 = STATIONs[i];
+        if (STATION_1.id != origID)
+            continue;
+        for (size_t j = i + 1; j < siz; ++j)
+        {
+            auto &&STATION_2 = STATIONs[j];
+            if (STATION_2.id != destID)
+                continue;
+            int depTime = STATION_1.tim.dep.Seconds();
+            int arrTime = STATION_2.tim.arr.Seconds();
+            int waitTime = (depTime + 3600 - startTime) % 3600;
+            int tripTime = (arrTime + 3600 - depTime) % 3600;
+            if (waitTime + tripTime < bestTime)
+            {
+                res = ArrDepTime(arrTime, depTime);
+                bestTime = waitTime + tripTime;
+            }
+        }
+    }
+    
+    return res;
 }
 
