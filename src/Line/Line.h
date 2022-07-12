@@ -2,6 +2,7 @@
 #define LINE_H
 
 #include <string>
+#include <algorithm>
 
 #include "Station.h"
 #include "Timing.h"

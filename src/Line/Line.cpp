@@ -27,7 +27,7 @@ int Line::SortStationTimes()
             printf("Error: Stations do not have the equal number of arr/dep entries!\nExiting!\n");
             return false;
         }
-        sort(station.arrdepTimes.begin(), station.arrdepTimes.end());
+        std::sort(station.arrdepTimes.begin(), station.arrdepTimes.end());
     }
     return siz;
 }

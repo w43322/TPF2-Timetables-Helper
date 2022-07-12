@@ -1,4 +1,12 @@
-#include <getopt.h>
+#ifdef WIN32
+    #include <io.h>
+    #include "../lib/getopt.h"
+    #define dup(x) _dup(x)
+    #define dup2(x, y) _dup2(x, y)
+#else
+    #include <getopt.h>
+#endif
+
 #include <cstring>
 #include <cctype>
 
