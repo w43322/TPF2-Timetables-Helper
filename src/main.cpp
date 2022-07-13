@@ -5,6 +5,7 @@
     #define dup2(x, y) _dup2(x, y)
 #else
     #include <getopt.h>
+    #include <unistd.h>
 #endif
 
 #include <cstring>

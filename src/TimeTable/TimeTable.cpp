@@ -430,7 +430,8 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
         ArrDepTime tim;
         STATION(int i, int t1, int t2) : id(i), tim(t1, t2) {}
     };
-    std::vector<STATION> STATIONs;
+    
+    std::vector<std::vector<STATION>> loops;
 
     std::getline(ifs, text);
     cells = StringHelper::GetCellsFromLine(text);
@@ -444,58 +445,77 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
     }
 
     // read STATIONs from table
+    uint64_t mask = UINT64_MAX;
     int col = 2;
-    do
+    size_t colCnt = table.front().size();
+    for (int i = colCnt / 2 - 1; i < UINT64_WIDTH; ++i)
     {
-        int id, t1, t2;
-        bool skippedFirst = false;
-        for (auto &&row : table)
+        mask &= ~(1ull << i);
+        col += 2;
+    }
+    col = 2;
+    while (mask)
+    {
+        std::vector<STATION> STATIONs;
+        do
         {
-            if (skippedFirst == false)
+            mask &= ~(1 << (col / 2 - 1));
+            int id, t1, t2;
+            bool skippedFirst = false;
+            for (auto &&row : table)
             {
-                skippedFirst = true;
-                continue;
+                if (skippedFirst == false)
+                {
+                    skippedFirst = true;
+                    continue;
+                }
+                id = stoi(row[0]);
+                t1 = stoi(row[col]);
+                t2 = stoi(row[col + 1]);
+                STATIONs.push_back(STATION(id, t1, t2));
             }
-            id = stoi(row[0]);
-            t1 = stoi(row[col]);
-            t2 = stoi(row[col + 1]);
-            STATIONs.push_back(STATION(id, t1, t2));
-        }
 
-        col = 2;
-        size_t colCnt = table.front().size();
-        while(col <= colCnt && t1 != stoi(table.front()[col])
-            && t2 != stoi(table.front()[col + 1]))
-            col += 2;
-    } while (col != 2);
+            col = 2;
+            while(col < colCnt && t1 != stoi(table.front()[col])
+                && t2 != stoi(table.front()[col + 1]))
+                col += 2;
+        } while (col != 2);
 
-    // copy STATIONs and append to itself's end to prepare for lookup
-    STATIONs.insert(STATIONs.end(), STATIONs.begin(), STATIONs.end());
+        // copy STATIONs and append to itself's end to prepare for lookup
+        STATIONs.insert(STATIONs.end(), STATIONs.begin(), STATIONs.end());
 
-    // Debug : Print all stations
-    //for (auto &&STATION : STATIONs)
-    //    printf("%d, %d, %d\n", STATION.id, STATION.tim.arr.Seconds(), STATION.tim.dep.Seconds());
+        // add STATIONs to loops
+        loops.push_back(STATIONs);
+    }
 
     int bestTime = INT_MAX;
     ArrDepTime res(0, 0);
-    for (size_t i = 0, siz = STATIONs.size(); i + 1 < siz; ++i)
+    for (auto &&STATIONs : loops)
     {
-        auto &&STATION_1 = STATIONs[i];
-        if (STATION_1.id != origID)
-            continue;
-        for (size_t j = i + 1; j < siz; ++j)
+        // Debug : Print all stations
+        //for (auto &&STATION : STATIONs)
+        //    printf("%d, %d, %d\n", STATION.id, STATION.tim.arr.Seconds(), STATION.tim.dep.Seconds());
+
+        for (size_t i = 0, siz = STATIONs.size(); i + 1 < siz; ++i)
         {
-            auto &&STATION_2 = STATIONs[j];
-            if (STATION_2.id != destID)
+            auto &&STATION_1 = STATIONs[i];
+            if (STATION_1.id != origID)
                 continue;
-            int depTime = STATION_1.tim.dep.Seconds();
-            int arrTime = STATION_2.tim.arr.Seconds();
-            int waitTime = (depTime + 3600 - startTime) % 3600;
-            int tripTime = (arrTime + 3600 - depTime) % 3600;
-            if (waitTime + tripTime < bestTime)
+            for (size_t j = i + 1; j < siz; ++j)
             {
-                res = ArrDepTime(arrTime, depTime);
-                bestTime = waitTime + tripTime;
+                auto &&STATION_2 = STATIONs[j];
+                if (STATION_2.id != destID)
+                    continue;
+                int depTime = STATION_1.tim.dep.Seconds();
+                int arrTime = STATION_2.tim.arr.Seconds();
+                int waitTime = (depTime + 3600 - startTime) % 3600;
+                int tripTime = (arrTime + 3600 - depTime) % 3600;
+                if (waitTime + tripTime < bestTime)
+                {
+                    res = ArrDepTime(arrTime, depTime);
+                    bestTime = waitTime + tripTime;
+                }
+                break;
             }
         }
     }
