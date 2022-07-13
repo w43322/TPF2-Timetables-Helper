@@ -417,8 +417,18 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
     std::vector<std::vector<std::string>> table;
 
     // get line with certain id
-    while (text != std::to_string(lineID) && (aliases.find(text) == aliases.end() || aliases.at(text) != lineID))
+    std::getline(ifs, text);
+    cells = StringHelper::GetCellsFromLine(text);
+    while (cells.size() != 1 ||
+        ((isdigit(cells[0][0]) && stoi(cells[0]) != lineID) &&
+        (aliases.find(cells[0]) == aliases.end() || aliases.at(cells[0]) != lineID)))
     {
+        if (text == "")
+        {
+            printf("Error: Line ID %d or its aliases not found in TBTD!\n"
+                "Exiting...\n", lineID);
+            return ArrDepTime(0, 0);
+        }
         std::getline(ifs, text);
         cells = StringHelper::GetCellsFromLine(text);
     }
