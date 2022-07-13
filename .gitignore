@@ -41,3 +41,7 @@ build/
 
 # I/O
 *.lua
+
+# Visual Studio
+.vs/
+CMakeSettings.json
