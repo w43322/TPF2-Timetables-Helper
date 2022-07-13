@@ -448,7 +448,7 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
     uint64_t mask = UINT64_MAX;
     int col = 2;
     size_t colCnt = table.front().size();
-    for (int i = colCnt / 2 - 1; i < UINT64_WIDTH; ++i)
+    for (int i = colCnt / 2 - 1; i < 64; ++i)
     {
         mask &= ~(1ull << i);
         col += 2;
