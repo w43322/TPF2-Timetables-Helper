@@ -459,17 +459,18 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
     int col = 2;
     size_t colCnt = table.front().size();
     for (int i = colCnt / 2 - 1; i < 64; ++i)
-    {
         mask &= ~(1ull << i);
-        col += 2;
-    }
-    col = 2;
     while (mask)
     {
+        // find first masked bit and start the collum from there
+        col = 2;
+        for (int i = 0; (mask & (1ull << i)) == 0; ++i)
+            col += 2;
+        
         std::vector<STATION> STATIONs;
         do
         {
-            mask &= ~(1 << (col / 2 - 1));
+            mask &= ~(1ull << (col / 2 - 1));
             int id, t1, t2;
             bool skippedFirst = false;
             for (auto &&row : table)
@@ -489,7 +490,7 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
             while(col < colCnt && t1 != stoi(table.front()[col])
                 && t2 != stoi(table.front()[col + 1]))
                 col += 2;
-        } while (col != 2);
+        } while (mask & (1ull << (col / 2 - 1)));
 
         // copy STATIONs and append to itself's end to prepare for lookup
         STATIONs.insert(STATIONs.end(), STATIONs.begin(), STATIONs.end());
@@ -505,6 +506,7 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
         // Debug : Print all stations
         //for (auto &&STATION : STATIONs)
         //    printf("%d, %d, %d\n", STATION.id, STATION.tim.arr.Seconds(), STATION.tim.dep.Seconds());
+        //printf("\n");
 
         for (size_t i = 0, siz = STATIONs.size(); i + 1 < siz; ++i)
         {
