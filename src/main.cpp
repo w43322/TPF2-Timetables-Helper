@@ -243,7 +243,7 @@ int main(int argc, char **argv)
                 fflush(logfileptr);
                 dup2(so, 1);
             }
-            printf("%d %d\n", res.dep.Seconds(), res.arr.Seconds());
+            printf("%d\n%d\n", res.dep.Seconds(), res.arr.Seconds());
             if (quiet)
             {
                 so = dup(1);
