@@ -53,6 +53,10 @@ Station::Type StringHelper::GetConditionTypeFromString(const std::string &str)
             return Station::Type_None;
     }
 }
+bool StringHelper::isCharToBeIgnored(char chr)
+{
+    return chr == ',' || chr == '\0' || chr == '\n' || chr == '\r';
+}
 std::vector<std::string> StringHelper::GetCellsFromLine(const std::string &text)
 {
     std::vector<std::string> cells;
@@ -60,10 +64,13 @@ std::vector<std::string> StringHelper::GetCellsFromLine(const std::string &text)
     for (size_t i = 0, siz = text.length(); i <= siz; ++i)
     {
         char chr = text[i];
-        if (chr == ',' || chr == '\0')
+        if (isCharToBeIgnored(chr) && !cell.empty())
         {
             cells.push_back(cell);
-            cell = "";
+            //printf("\"%s\"\n", cell.c_str());
+            cell.clear();
+            while(i + 1 < siz && isCharToBeIgnored(text[i + 1]))
+                ++i;
             continue;
         }
         cell += chr;
