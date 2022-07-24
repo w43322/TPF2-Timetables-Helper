@@ -403,8 +403,10 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
             {
                 auto &&timeIDX = trip[i];
                 //ofs << timeIDX << ',';
-                ofs << station.arrdepTimes[timeIDX].arr.Seconds() << ',';
-                ofs << station.arrdepTimes[timeIDX].dep.Seconds() << ',';
+                ofs << station.arrdepTimes[timeIDX].arr.mm << ',';
+                ofs << station.arrdepTimes[timeIDX].arr.ss << ',';
+                ofs << station.arrdepTimes[timeIDX].dep.mm << ',';
+                ofs << station.arrdepTimes[timeIDX].dep.ss << ',';
             }
             ofs << '\n';
         }
@@ -438,14 +440,14 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
     {
         int id;
         ArrDepTime tim;
-        STATION(int i, int t1, int t2) : id(i), tim(t1, t2) {}
+        STATION(int i, int t1, int t2, int t3, int t4) : id(i), tim(t1, t2, t3, t4) {}
     };
     
     std::vector<std::vector<STATION>> loops;
 
     std::getline(ifs, text);
     cells = StringHelper::GetCellsFromLine(text);
-    while (cells.size() >= 4)
+    while (cells.size() >= 6)
     {
         // add to table
         table.push_back(cells);
@@ -458,20 +460,20 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
     uint64_t mask = UINT64_MAX;
     int col = 2;
     size_t colCnt = table.front().size();
-    for (int i = colCnt / 2 - 1; i < 64; ++i)
+    for (int i = (colCnt - 2) / 4; i < 64; ++i)
         mask &= ~(1ull << i);
     while (mask)
     {
         // find first masked bit and start the collum from there
         col = 2;
         for (int i = 0; (mask & (1ull << i)) == 0; ++i)
-            col += 2;
+            col += 4;
         
         std::vector<STATION> STATIONs;
         do
         {
-            mask &= ~(1ull << (col / 2 - 1));
-            int id, t1, t2;
+            mask &= ~(1ull << ((col - 2) / 4));
+            int id, t1mm, t1ss, t2mm, t2ss;
             bool skippedFirst = false;
             for (auto &&row : table)
             {
@@ -481,16 +483,21 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
                     continue;
                 }
                 id = stoi(row[0]);
-                t1 = stoi(row[col]);
-                t2 = stoi(row[col + 1]);
-                STATIONs.push_back(STATION(id, t1, t2));
+                t1mm = stoi(row[col]);
+                t1ss = stoi(row[col + 1]);
+                t2mm = stoi(row[col + 2]);
+                t2ss = stoi(row[col + 3]);
+                STATIONs.push_back(STATION(id, t1mm, t1ss, t2mm, t2ss));
             }
 
             col = 2;
-            while(col < colCnt && t1 != stoi(table.front()[col])
-                && t2 != stoi(table.front()[col + 1]))
-                col += 2;
-        } while (mask & (1ull << (col / 2 - 1)));
+            while(col < colCnt
+                && t1mm != stoi(table.front()[col])
+                && t1ss != stoi(table.front()[col + 1])
+                && t2mm != stoi(table.front()[col + 2])
+                && t2ss != stoi(table.front()[col + 3]))
+                col += 4;
+        } while (mask & (1ull << ((col - 2) / 4)));
 
         // copy STATIONs and append to itself's end to prepare for lookup
         STATIONs.insert(STATIONs.end(), STATIONs.begin(), STATIONs.end());

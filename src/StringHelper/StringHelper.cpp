@@ -55,7 +55,7 @@ Station::Type StringHelper::GetConditionTypeFromString(const std::string &str)
 }
 bool StringHelper::isCharToBeIgnored(char chr)
 {
-    return chr == ',' || chr == '\0' || chr == '\n' || chr == '\r';
+    return chr == ',' || chr == '\0' || chr == '\n' || chr == '\r' || chr == '"';
 }
 std::vector<std::string> StringHelper::GetCellsFromLine(const std::string &text)
 {
