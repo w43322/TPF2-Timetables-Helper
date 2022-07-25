@@ -168,7 +168,7 @@ int main(int argc, char **argv)
             break;
         case 'd':
             tbtdCsvFile = std::ifstream(optarg);
-            printf("    TBTD Data data Path: \"%s\"\n", optarg);
+            printf("    TBTD Data File Path: \"%s\"\n", optarg);
             if (!tbtdCsvFile.is_open())
             {
                 printf("Error: Failed to open or create TBTD data file!\nExiting...\n");

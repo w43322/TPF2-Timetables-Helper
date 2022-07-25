@@ -492,10 +492,10 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
 
             col = 2;
             while(col < colCnt
-                && t1mm != stoi(table.front()[col])
-                && t1ss != stoi(table.front()[col + 1])
-                && t2mm != stoi(table.front()[col + 2])
-                && t2ss != stoi(table.front()[col + 3]))
+                && (t1mm != stoi(table.front()[col])
+                || t1ss != stoi(table.front()[col + 1])
+                || t2mm != stoi(table.front()[col + 2])
+                || t2ss != stoi(table.front()[col + 3])))
                 col += 4;
         } while (mask & (1ull << ((col - 2) / 4)));
 
