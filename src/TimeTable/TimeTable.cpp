@@ -673,7 +673,8 @@ void TimeTable::ReplaceWithCsv(std::ifstream &ifs)
                 cells[3].c_str(),
                 cells[4].c_str(),
                 cells[5].c_str());*/
-            newStation.SetAttribute(Station::Attr_conditionType, Station::Type_ArrDep);
+            
+            newStation.SetAttribute(Station::Attr_conditionType, (cells.size() <= 2) ? Station::Type_None : Station::Type_ArrDep);
             newStation.SetAttribute(Station::Attr_inboundTime, 0);
             newStation.SetAttribute(Station::Attr_stationID, stationID);
 
@@ -691,6 +692,8 @@ void TimeTable::ReplaceWithCsv(std::ifstream &ifs)
             StringHelper::GetLine(ifs, text);
             cells = StringHelper::GetCellsFromLine(text);
         }
+
+        line.stations.pop_back();
     }
 }
 
