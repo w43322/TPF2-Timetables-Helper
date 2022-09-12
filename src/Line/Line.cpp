@@ -56,17 +56,3 @@ void Line::GetIndex(int staID, int &staIDX, int &timeIDX, const ArrDepTime &adt)
     }
     timeIDX = -1;
 }
-
-void Line::GetIndex(int staID, int &staIDX)
-{
-    for (size_t i = 0, sizi = stations.size(); i < sizi; ++i)
-    {
-        auto &&station = stations[i];
-        if (station.stationID == staID)
-        {
-            staIDX = i;
-            return;
-        }
-    }
-    staIDX = -1;
-}

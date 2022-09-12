@@ -36,7 +36,6 @@ public:
     void AddStation(const Station& station);
     int SortStationTimes();
     void GetIndex(int staID, int &staIDX, int &timeIDX, const ArrDepTime &adt);
-    void GetIndex(int staID, int &staIDX);
 };
 
 #endif

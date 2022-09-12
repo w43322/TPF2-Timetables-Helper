@@ -246,7 +246,8 @@ int main(int argc, char **argv)
             std::ifstream aliasFile(aliasPath);
             luaio.tt.ReadAlias(aliasFile);
         }
-        luaio.Read(luaio.tt.GetIDs(srcCsvFile));
+        IDs = luaio.tt.GetIDs(srcCsvFile);
+        luaio.Read(IDs);
         srcCsvFile.clear();
         srcCsvFile.seekg(0);
         luaio.tt.GenerateTBTD(srcCsvFile, dstCsvFile);
@@ -294,7 +295,8 @@ int main(int argc, char **argv)
             std::ifstream aliasFile(aliasPath);
             luaio.tt.ReadAlias(aliasFile);
         }
-        luaio.Read(luaio.tt.GetIDs(srcCsvFile));
+        IDs = luaio.tt.GetIDs(srcCsvFile);
+        luaio.Read(IDs);
         srcCsvFile.clear();
         srcCsvFile.seekg(0);
         luaio.tt.ReplaceWithCsv(srcCsvFile);

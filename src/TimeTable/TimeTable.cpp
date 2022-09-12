@@ -30,6 +30,7 @@ std::vector<int> TimeTable::GetIDs(std::ifstream &ifs)
             id = aliases.at(cells[0]);
         }
 
+        printf("push:%d\n", id);
         res.push_back(id);
 
         do
@@ -651,48 +652,41 @@ void TimeTable::ReplaceWithCsv(std::ifstream &ifs)
 
         auto &&line = lines.at(id);
         
+        // clear current stations
+        line.stations.clear();
+
         // get stations
         std::getline(ifs, text);
         cells = StringHelper::GetCellsFromLine(text);
-        
+
         // update time info at each station
         while (cells.size() > 1)
         {
+            // construct a STATION
+            Station newStation;
+
             // get index
             int stationID = std::stoi(cells[0]);
-            int staIDX, timeIDX;
-            /*printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
+            printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
                 cells[0].c_str(),
                 cells[1].c_str(),
                 cells[2].c_str(),
                 cells[3].c_str(),
                 cells[4].c_str(),
-                cells[5].c_str());*/
-            line.GetIndex(stationID, staIDX);
+                cells[5].c_str());
+            newStation.SetAttribute(Station::Attr_conditionType, Station::Type_ArrDep);
+            newStation.SetAttribute(Station::Attr_inboundTime, 0);
+            newStation.SetAttribute(Station::Attr_stationID, stationID);
 
-            if (staIDX == -1)
-            {
-                printf("Error: Station %d not found!\n"
-                    "Exiting...\n", stationID);
-                return;
-            }
-
-            if (line.stations[staIDX].conditionType != Station::Type_ArrDep)
-            {
-                printf("Error: Station %d has condition type other than ArrDep!\n"
-                    "Exiting...\n", stationID);
-                return;
-            }
-
-            line.stations[staIDX].arrdepTimes.clear();
             for (int j = 5, siz = cells.size(); j < siz; j += 4)
             {
-                line.stations[staIDX].AppendArrDepTime(
+                newStation.AppendArrDepTime(
                     ArrDepTime(stoi(cells[j - 3]),
                         stoi(cells[j - 2]),
                         stoi(cells[j - 1]),
                         stoi(cells[j])));
             }
+            line.AddStation(newStation);
 
             // get next station
             std::getline(ifs, text);
