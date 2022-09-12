@@ -337,7 +337,7 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
         cells = StringHelper::GetCellsFromLine(text);
         
         // find refrence trip
-        while (cells.size() == 5)
+        while (cells.size() == 6)
         {
             // get index
             int stationID = std::stoi(cells[0]);
@@ -350,10 +350,10 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
                 cells[4].c_str());*/
             line.GetIndex(stationID, staIDX, timeIDX,
                     ArrDepTime(
-                        std::stoi(cells[1]),
                         std::stoi(cells[2]),
                         std::stoi(cells[3]),
-                        std::stoi(cells[4])));
+                        std::stoi(cells[4]),
+                        std::stoi(cells[5])));
 
             if (staIDX == -1)
             {
@@ -362,7 +362,7 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
                 return;
             }
             tripStations.push_back(staIDX);
-
+            line.stations[staIDX].name = cells[1];
 
             if (timeIDX == -1)
             {
@@ -393,11 +393,11 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
                 trips.push_back(indexes);
         }
 
-        ofs << id << '\n';
+        ofs << id << ",\n";
         for (size_t i = 0, siz = tripStations.size(); i < siz; ++i)
         {
             auto &&station = line.stations[tripStations[i]];
-            ofs << station.stationID << ",\"" << station.name << "\",";
+            ofs << station.stationID << "," << station.name << ",";
             //ofs << tripStations[i] << ':';
             for (auto &&trip : trips) // num. elem in trips: stations
             {
