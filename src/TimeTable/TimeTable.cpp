@@ -1,13 +1,57 @@
 #include "TimeTable.h"
 
+std::vector<int> TimeTable::GetIDs(std::ifstream &ifs)
+{
+    std::vector<int> res;
+
+    std::string text;
+    std::vector<std::string> cells;
+
+    // get a line
+    std::getline(ifs, text);
+    cells = StringHelper::GetCellsFromLine(text);
+    while (cells.size() == 1)
+    {
+        std::vector<int> tripStations/*stores the indexes of stations*/, indexes;
+        std::vector<std::vector<int>> trips; // stores the index in Stations::times, trips[trip][staIDX] = timIDX
+
+        int id;
+        if (isdigit(cells[0][0]))
+            id = std::stoi(cells[0]);
+        else
+        {
+            std::transform(cells[0].begin(), cells[0].end(), cells[0].begin(), ::tolower);
+            if (aliases.find(cells[0]) == aliases.end())
+            {
+                printf("Error: \"%s\" is not a valid alias!\n"
+                    "Exiting...\n", cells[0].c_str());
+                return std::vector<int>();
+            }
+            id = aliases.at(cells[0]);
+        }
+
+        res.push_back(id);
+
+        do
+        {
+            std::getline(ifs, text);
+            cells = StringHelper::GetCellsFromLine(text);
+        } while (cells.size() > 1);
+    }
+    return res;
+}
 void TimeTable::AddLine(const Line& line)
 {
     lines.insert(std::make_pair(line.lineID, line));
 }
 void TimeTable::ReadFromFile(std::ifstream &ifs,
+                        const std::vector<int> IDs,
                         std::stringstream &before,
                         std::stringstream &after)
 {
+    // hash map for look up
+    std::unordered_set<int> hashTableIDs(IDs.begin(), IDs.end());
+
     // check if file is open
     if (!ifs.is_open())
     {
@@ -34,64 +78,75 @@ void TimeTable::ReadFromFile(std::ifstream &ifs,
         // construct a LINE
         Line newLine(stoi(StringHelper::GetStringFromString(text)));
 
-        // read "hasTimetable" attribute
-        std::getline(ifs, text); // hasTimetable = true,
-        newLine.SetAttribute(Line::Attr_hasTimeTable, StringHelper::GetBoolFromString(text));
-
-        // read stations block
-        std::getline(ifs, text); // stations = {
-        // read station
-        std::getline(ifs, text); // {
-        while (text != "\t\t\t\t},") // ends reading a STATIONS block
+        if (hashTableIDs.find(newLine.lineID) == hashTableIDs.end())
         {
-            // construct a STATION
-            Station newStation;
-
-            // read conditions block
-            std::getline(ifs, text); // conditions = {
-            std::getline(ifs, text); // ArrDep | debounce | None | type
-            while (text != "\t\t\t\t\t\t},") // ends reading a CONDITION block
+            while (text != "\t\t\t\t},") // ends reading a STATIONS block
             {
-                // analyze format
-                if (text.back() == '{') // breaking line (ArrDep)
-                {
-                    // get time
-                    std::getline(ifs, text); // { 42, 15, 42, 35, },
-                    while (text != "\t\t\t\t\t\t\t},") // ends reading a TIME block
-                    {
-                        // read
-                        newStation.AppendArrDepTime(StringHelper::GetArrDepTimeFromString(text));
-                        // get new time
-                        std::getline(ifs, text); // { 42, 15, 42, 35, },
-                    }
-                }
-                // else: one liner (Others)
-                switch (text[7])
-                {
-                case 'd':
-                    if (text[20] != '}') // debounce = { 0, 0, },
-                        newStation.SetDebounceTime(StringHelper::GetDebounceTimeFromString(text));
-                    break;
-                case 't': // type = "ArrDep",
-                    newStation.SetConditionType(StringHelper::GetConditionTypeFromString(text));
-                    break;
-                case 'N': default: // type = "None",
-                    break;
-                }
-                // get new line for analyze
-                std::getline(ifs, text); // ArrDep | debounce | None | type
+                std::getline(ifs, text);
+                newLine.rawStrings.push_back(text);
             }
-            // read "inboundTime" attribute
-            std::getline(ifs, text); // inboundTime = 0,
-            newStation.SetAttribute(Station::Attr_inboundTime, StringHelper::GetIntFromString(text));
-            // read "stationID" attribute
-            std::getline(ifs, text); // stationID = 155237,
-            newStation.SetAttribute(Station::Attr_stationID, StringHelper::GetIntFromString(text));
-            // add STATION to LINE
-            newLine.AddStation(newStation);
-            // read next STATION
-            std::getline(ifs, text); // },
+        }
+        else
+        {
+            // read "hasTimetable" attribute
+            std::getline(ifs, text); // hasTimetable = true,
+            newLine.SetAttribute(Line::Attr_hasTimeTable, StringHelper::GetBoolFromString(text));
+
+            // read stations block
+            std::getline(ifs, text); // stations = {
+            // read station
             std::getline(ifs, text); // {
+            while (text != "\t\t\t\t},") // ends reading a STATIONS block
+            {
+                // construct a STATION
+                Station newStation;
+
+                // read conditions block
+                std::getline(ifs, text); // conditions = {
+                std::getline(ifs, text); // ArrDep | debounce | None | type
+                while (text != "\t\t\t\t\t\t},") // ends reading a CONDITION block
+                {
+                    // analyze format
+                    if (text.back() == '{') // breaking line (ArrDep)
+                    {
+                        // get time
+                        std::getline(ifs, text); // { 42, 15, 42, 35, },
+                        while (text != "\t\t\t\t\t\t\t},") // ends reading a TIME block
+                        {
+                            // read
+                            newStation.AppendArrDepTime(StringHelper::GetArrDepTimeFromString(text));
+                            // get new time
+                            std::getline(ifs, text); // { 42, 15, 42, 35, },
+                        }
+                    }
+                    // else: one liner (Others)
+                    switch (text[7])
+                    {
+                    case 'd':
+                        if (text[20] != '}') // debounce = { 0, 0, },
+                            newStation.SetDebounceTime(StringHelper::GetDebounceTimeFromString(text));
+                        break;
+                    case 't': // type = "ArrDep",
+                        newStation.SetConditionType(StringHelper::GetConditionTypeFromString(text));
+                        break;
+                    case 'N': default: // type = "None",
+                        break;
+                    }
+                    // get new line for analyze
+                    std::getline(ifs, text); // ArrDep | debounce | None | type
+                }
+                // read "inboundTime" attribute
+                std::getline(ifs, text); // inboundTime = 0,
+                newStation.SetAttribute(Station::Attr_inboundTime, StringHelper::GetIntFromString(text));
+                // read "stationID" attribute
+                std::getline(ifs, text); // stationID = 155237,
+                newStation.SetAttribute(Station::Attr_stationID, StringHelper::GetIntFromString(text));
+                // add STATION to LINE
+                newLine.AddStation(newStation);
+                // read next STATION
+                std::getline(ifs, text); // },
+                std::getline(ifs, text); // {
+            }
         }
         // add LINE to TT
         AddLine(newLine);
@@ -110,9 +165,13 @@ void TimeTable::ReadFromFile(std::ifstream &ifs,
     }
 }
 void TimeTable::OutputToFile(std::ofstream &ofs,
+                    const std::vector<int> IDs,
                     const std::stringstream &before,
                     const std::stringstream &after)
 {
+    // hash map for look up
+    std::unordered_set<int> hashTableIDs(IDs.begin(), IDs.end());
+
     // check if file is open
     if (!ofs.is_open())
     {
@@ -136,69 +195,79 @@ void TimeTable::OutputToFile(std::ofstream &ofs,
         // line start
         ofs << "\t\t\t[\"" << line.lineID << "\"] = {\n";
         
-        // hasTimetable
-        ofs << "\t\t\t\thasTimetable = " << (line.hasTimeTable ? "true" : "false") << ",\n";
-
-        // stations start
-        ofs << "\t\t\t\tstations = {\n";
-        
-        for (auto &&station : line.stations)
+        if (hashTableIDs.find(line.lineID) == hashTableIDs.end())
         {
-            // station start
-            ofs << "\t\t\t\t\t{\n";
-
-            // conditions start
-            ofs << "\t\t\t\t\t\tconditions = {\n";
-
-            switch (station.conditionType)
+            for (auto &&s : line.rawStrings)
             {
-            case Station::Type_ArrDep:
-                ofs << "\t\t\t\t\t\t\tArrDep = {\n";
-                for (auto &&tim : station.arrdepTimes)
+                ofs << s << '\n';
+            }
+        }
+        else
+        {
+            // hasTimetable
+            ofs << "\t\t\t\thasTimetable = " << (line.hasTimeTable ? "true" : "false") << ",\n";
+
+            // stations start
+            ofs << "\t\t\t\tstations = {\n";
+            
+            for (auto &&station : line.stations)
+            {
+                // station start
+                ofs << "\t\t\t\t\t{\n";
+
+                // conditions start
+                ofs << "\t\t\t\t\t\tconditions = {\n";
+
+                switch (station.conditionType)
                 {
-                    ofs << "\t\t\t\t\t\t\t\t{ ";
-                    ofs << std::to_string(tim.arr.mm);
+                case Station::Type_ArrDep:
+                    ofs << "\t\t\t\t\t\t\tArrDep = {\n";
+                    for (auto &&tim : station.arrdepTimes)
+                    {
+                        ofs << "\t\t\t\t\t\t\t\t{ ";
+                        ofs << std::to_string(tim.arr.mm);
+                        ofs << ", ";
+                        ofs << std::to_string(tim.arr.ss);
+                        ofs << ", ";
+                        ofs << std::to_string(tim.dep.mm);
+                        ofs << ", ";
+                        ofs << std::to_string(tim.dep.ss);
+                        ofs << ", },\n";
+                    }
+                    ofs << "\t\t\t\t\t\t\t},\n";
+                    ofs << "\t\t\t\t\t\t\ttype = \"ArrDep\",\n";
+                    break;
+                case Station::Type_debounce:
+                    // debounce = { 0, 0, },
+                    ofs << "\t\t\t\t\t\t\tdebounce = { ";
+                    ofs << std::to_string(station.debounceTime.mm);
                     ofs << ", ";
-                    ofs << std::to_string(tim.arr.ss);
-                    ofs << ", ";
-                    ofs << std::to_string(tim.dep.mm);
-                    ofs << ", ";
-                    ofs << std::to_string(tim.dep.ss);
+                    ofs << std::to_string(station.debounceTime.ss);
                     ofs << ", },\n";
+                    ofs << "\t\t\t\t\t\t\ttype = \"debounce\",\n";
+                    break;
+                case Station::Type_None:
+                    ofs << "\t\t\t\t\t\t\tNone = { },\n";
+                    ofs << "\t\t\t\t\t\t\ttype = \"None\",\n";
+                    break;
                 }
-                ofs << "\t\t\t\t\t\t\t},\n";
-                ofs << "\t\t\t\t\t\t\ttype = \"ArrDep\",\n";
-                break;
-            case Station::Type_debounce:
-                // debounce = { 0, 0, },
-                ofs << "\t\t\t\t\t\t\tdebounce = { ";
-                ofs << std::to_string(station.debounceTime.mm);
-                ofs << ", ";
-                ofs << std::to_string(station.debounceTime.ss);
-                ofs << ", },\n";
-                ofs << "\t\t\t\t\t\t\ttype = \"debounce\",\n";
-                break;
-            case Station::Type_None:
-                ofs << "\t\t\t\t\t\t\tNone = { },\n";
-                ofs << "\t\t\t\t\t\t\ttype = \"None\",\n";
-                break;
+
+                // conditions end
+                ofs << "\t\t\t\t\t\t},\n";
+                
+                // inboundTime
+                ofs << "\t\t\t\t\t\tinboundTime = " << station.inboundTime << ",\n";
+
+                // stationID
+                ofs << "\t\t\t\t\t\tstationID = " << station.stationID << ",\n";
+
+                // station end
+                ofs << "\t\t\t\t\t},\n";
             }
 
-            // conditions end
-            ofs << "\t\t\t\t\t\t},\n";
-            
-            // inboundTime
-            ofs << "\t\t\t\t\t\tinboundTime = " << station.inboundTime << ",\n";
-
-            // stationID
-            ofs << "\t\t\t\t\t\tstationID = " << station.stationID << ",\n";
-
-            // station end
-            ofs << "\t\t\t\t\t},\n";
+            // stations end
+            ofs << "\t\t\t\t},\n";
         }
-
-        // stations end
-        ofs << "\t\t\t\t},\n";
 
         // line end
         ofs << "\t\t\t},\n";
@@ -271,18 +340,18 @@ void TimeTable::ReadAlias(std::ifstream &ifs)
         
         int id = stoi(cells[0]);
 
-        if (lines.find(id) == lines.end())
+        /*if (lines.find(id) == lines.end())
             printf("Warning: Line ID %d not found, "
                     "its aliases will not be added...\n", id);
         else
         {
-            lines.at(id).name = cells[1];
+            lines.at(id).name = cells[1];*/
             for (size_t i = 1, siz = cells.size(); i < siz; ++i)
             {
                 std::transform(cells[i].begin(), cells[i].end(), cells[i].begin(), ::tolower);
                 aliases.insert(std::make_pair(cells[i], id));
             }
-        }
+        /*}*/
     }
 
 }
@@ -342,12 +411,13 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
             // get index
             int stationID = std::stoi(cells[0]);
             int staIDX, timeIDX;
-            /*printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
+            /*printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
                 cells[0].c_str(),
                 cells[1].c_str(),
                 cells[2].c_str(),
                 cells[3].c_str(),
-                cells[4].c_str());*/
+                cells[4].c_str(),
+                cells[5].c_str());*/
             line.GetIndex(stationID, staIDX, timeIDX,
                     ArrDepTime(
                         std::stoi(cells[2]),

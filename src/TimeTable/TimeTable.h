@@ -5,6 +5,7 @@
 #include <sstream>
 #include <map>
 #include <climits>
+#include <unordered_set>
 
 #include "Line.h"
 #include "StringHelper.h"
@@ -16,11 +17,14 @@ private:
     std::map<std::string, int> aliases;
 public:
     enum OffsetSelect {Select_None, Select_Arr, Select_Dep, Select_ArrDep};
+    std::vector<int> GetIDs(std::ifstream &ifs);
     void AddLine(const Line& line);
     void ReadFromFile(std::ifstream &ifs,
+                        const std::vector<int> IDs,
                         std::stringstream &before,
                         std::stringstream &after);
     void OutputToFile(std::ofstream &ofs,
+                    const std::vector<int> IDs,
                     const std::stringstream &before,
                     const std::stringstream &after);
     void Offset(const std::vector<int> &lineIDs,

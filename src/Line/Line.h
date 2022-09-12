@@ -18,6 +18,7 @@ private:
     // self defined
     int lineID;
     std::vector<Station> stations;
+    std::vector<std::string> rawStrings;
     std::string name;
 
     // attributes

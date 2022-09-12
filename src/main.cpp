@@ -192,8 +192,20 @@ int main(int argc, char **argv)
             return 0;
         }
         if (aliasPath.empty())
+        {
             printf("Warning: Alias file not specified!\n");
-        luaio.Read();
+        }
+        else
+        {
+            std::ifstream aliasFile(aliasPath);
+            luaio.tt.ReadAlias(aliasFile);
+        }
+        if (IDs.empty())
+        {
+            printf("Error: You didn't specify which lines to offset, defaulting to all lines...\n");
+            break;
+        }
+        luaio.Read(IDs);
         if (offsetSelect == TimeTable::Select_None)
         {
             printf("Error: Offset mode not selected!\n    "
@@ -206,11 +218,9 @@ int main(int argc, char **argv)
                 "Use \"-t xx\" to select offset mode, \"-h\" for more info.\nExiting...\n");
             break;
         }
-        if (IDs.empty())
-            printf("Warning: You didn't specify which lines to offset, defaulting to all lines...\n");
         luaio.tt.Offset(IDs, timeInSec, offsetSelect);
         printf("Writing to specified output file...\n");
-        luaio.Write();
+        luaio.Write(IDs);
         break;
     case Generate:
         if (inPath.empty() || outPath.empty())
@@ -219,8 +229,17 @@ int main(int argc, char **argv)
             return 0;
         }
         if (aliasPath.empty())
+        {
             printf("Warning: Alias file not specified!\n");
-        luaio.Read();
+        }
+        else
+        {
+            std::ifstream aliasFile(aliasPath);
+            luaio.tt.ReadAlias(aliasFile);
+        }
+        luaio.Read(luaio.tt.GetIDs(srcCsvFile));
+        srcCsvFile.clear();
+        srcCsvFile.seekg(0);
         luaio.tt.GenerateTBTD(srcCsvFile, dstCsvFile);
         break;
     case Lookup:
