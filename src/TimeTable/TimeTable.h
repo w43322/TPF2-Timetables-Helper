@@ -33,6 +33,8 @@ public:
     void ReadAlias(std::ifstream &ifs);
     void GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs);
     ArrDepTime LookupTBTD(std::ifstream &ifs, int lineID, int origID, int destID, int startTime);
+    void ReplaceWithCsv(std::ifstream &ifs);
+    void CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, std::ofstream &ofs, int interval);
 };
 
 #endif

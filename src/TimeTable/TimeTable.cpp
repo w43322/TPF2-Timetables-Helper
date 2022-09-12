@@ -482,6 +482,7 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
         }
     }
 }
+
 ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int destID, int startTime)
 {
     std::string text;
@@ -612,3 +613,173 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
     return res;
 }
 
+void TimeTable::ReplaceWithCsv(std::ifstream &ifs)
+{
+    std::string text;
+    std::vector<std::string> cells;
+
+    // get a line
+    std::getline(ifs, text);
+    cells = StringHelper::GetCellsFromLine(text);
+    while (cells.size() == 1)
+    {
+        if (cells[0] == "")
+            break;
+
+        int id;
+        if (isdigit(cells[0][0]))
+            id = std::stoi(cells[0]);
+        else
+        {
+            std::transform(cells[0].begin(), cells[0].end(), cells[0].begin(), ::tolower);
+            if (aliases.find(cells[0]) == aliases.end())
+            {
+                printf("Error: \"%s\" is not a valid alias!\n"
+                    "Exiting...\n", cells[0].c_str());
+                return;
+            }
+            id = aliases.at(cells[0]);
+        }
+        //printf("\"%s\"\n", cells[0].c_str());
+
+        if (lines.find(id) == lines.end())
+        {
+            printf("Error: Line ID %d not found in timetable when trying to replace it!\n"
+                "Exiting...\n", id);
+            return;
+        }
+
+        auto &&line = lines.at(id);
+        
+        // get stations
+        std::getline(ifs, text);
+        cells = StringHelper::GetCellsFromLine(text);
+        
+        // update time info at each station
+        while (cells.size() > 1)
+        {
+            // get index
+            int stationID = std::stoi(cells[0]);
+            int staIDX, timeIDX;
+            /*printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
+                cells[0].c_str(),
+                cells[1].c_str(),
+                cells[2].c_str(),
+                cells[3].c_str(),
+                cells[4].c_str(),
+                cells[5].c_str());*/
+            line.GetIndex(stationID, staIDX);
+
+            if (staIDX == -1)
+            {
+                printf("Error: Station %d not found!\n"
+                    "Exiting...\n", stationID);
+                return;
+            }
+
+            if (line.stations[staIDX].conditionType != Station::Type_ArrDep)
+            {
+                printf("Error: Station %d has condition type other than ArrDep!\n"
+                    "Exiting...\n", stationID);
+                return;
+            }
+
+            line.stations[staIDX].arrdepTimes.clear();
+            for (int j = 5, siz = cells.size(); j < siz; j += 4)
+            {
+                line.stations[staIDX].AppendArrDepTime(
+                    ArrDepTime(stoi(cells[j - 3]),
+                        stoi(cells[j - 2]),
+                        stoi(cells[j - 1]),
+                        stoi(cells[j])));
+            }
+
+            // get next station
+            std::getline(ifs, text);
+            cells = StringHelper::GetCellsFromLine(text);
+        }
+    }
+}
+
+void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, std::ofstream &ofs, int interval)
+{
+    // hash map for look up
+    std::unordered_set<int> hashTableIDs(IDs.begin(), IDs.end());
+
+    std::string text;
+    std::vector<std::string> cells;
+
+    // get a line
+    std::getline(ifs, text);
+    cells = StringHelper::GetCellsFromLine(text);
+    while (cells.size() == 1)
+    {
+        if (cells[0] == "")
+            break;
+
+        int id;
+        if (isdigit(cells[0][0]))
+            id = std::stoi(cells[0]);
+        else
+        {
+            std::transform(cells[0].begin(), cells[0].end(), cells[0].begin(), ::tolower);
+            if (aliases.find(cells[0]) == aliases.end())
+            {
+                printf("Error: \"%s\" is not a valid alias!\n"
+                    "Exiting...\n", cells[0].c_str());
+                return;
+            }
+            id = aliases.at(cells[0]);
+        }
+        if (hashTableIDs.find(id) == hashTableIDs.end())
+        {
+            do
+            {
+                std::getline(ifs, text);
+                cells = StringHelper::GetCellsFromLine(text);
+            } while (cells.size() > 1);
+            continue;
+        }
+        hashTableIDs.erase(id);
+        ofs << id << ",\n";
+        //printf("\"%s\"\n", cells[0].c_str());
+
+        // get a line
+        std::getline(ifs, text);
+        cells = StringHelper::GetCellsFromLine(text);
+
+        while (cells.size() == 6)
+        {
+            ofs << cells[0] << "," << cells[1] << ",";
+            /*printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
+                cells[0].c_str(),
+                cells[1].c_str(),
+                cells[2].c_str(),
+                cells[3].c_str(),
+                cells[4].c_str(),
+                cells[5].c_str());*/
+            Time arr(std::stoi(cells[2]), std::stoi(cells[3]));
+            Time dep(std::stoi(cells[4]), std::stoi(cells[5]));
+            for (int i = 0; i < 3600; i += interval, arr = arr + interval, dep = dep + interval)
+            {
+                ofs << arr.mm << ',' << arr.ss << ',';
+                ofs << dep.mm << ',' << dep.ss << ',';
+            }
+            ofs << '\n';
+
+            // get a line
+            std::getline(ifs, text);
+            cells = StringHelper::GetCellsFromLine(text);
+        }
+    }
+
+    if (!hashTableIDs.empty())
+    {
+        printf("Warning: The following IDs are not present in the specified input csv file:\n    ");
+        for (auto &&x : hashTableIDs)
+        {
+            printf("%10d,", x);
+        }
+        printf("\n");
+    }
+}

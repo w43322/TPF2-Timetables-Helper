@@ -9,10 +9,12 @@ void Line::SetAttribute(Attr attr, bool b)
         return;
     }
 }
+
 void Line::AddStation(const Station& station)
 {
     stations.push_back(station);
 }
+
 int Line::SortStationTimes()
 {
     int siz = 0;
@@ -31,6 +33,7 @@ int Line::SortStationTimes()
     }
     return siz;
 }
+
 void Line::GetIndex(int staID, int &staIDX, int &timeIDX, const ArrDepTime &adt)
 {
     for (size_t i = 0, sizi = stations.size(); i < sizi; ++i)
@@ -54,3 +57,16 @@ void Line::GetIndex(int staID, int &staIDX, int &timeIDX, const ArrDepTime &adt)
     timeIDX = -1;
 }
 
+void Line::GetIndex(int staID, int &staIDX)
+{
+    for (size_t i = 0, sizi = stations.size(); i < sizi; ++i)
+    {
+        auto &&station = stations[i];
+        if (station.stationID == staID)
+        {
+            staIDX = i;
+            return;
+        }
+    }
+    staIDX = -1;
+}

@@ -17,9 +17,14 @@ public:
 private:
     // self defined
     int lineID;
-    std::vector<Station> stations;
-    std::vector<std::string> rawStrings;
     std::string name;
+    std::vector<Station> stations;
+/*
+    ^
+    | mutually exclusive 
+    V
+*/
+    std::vector<std::string> rawStrings;
 
     // attributes
     bool hasTimeTable;
@@ -31,6 +36,7 @@ public:
     void AddStation(const Station& station);
     int SortStationTimes();
     void GetIndex(int staID, int &staIDX, int &timeIDX, const ArrDepTime &adt);
+    void GetIndex(int staID, int &staIDX);
 };
 
 #endif

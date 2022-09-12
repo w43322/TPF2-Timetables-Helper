@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 
     std::string inPath, outPath, aliasPath;
 
-    enum Operation {Help, Offset, Generate, Lookup} operation = Help;
+    enum Operation {Help, Offset, Generate, Lookup, Replace, Copy} operation = Help;
 
     bool quiet = false;
 
@@ -50,12 +50,35 @@ int main(int argc, char **argv)
         logfileptr = freopen("log.txt", "w", stdout);
     }
 
-    while ((ch = getopt(argc, argv, "r:w:os:t:i:gc:v:a:ld:q")) != -1)
+    while ((ch = getopt(argc, argv, "OGLRCr:w:s:t:i:c:v:a:d:q")) != -1)
     {
         //printf("开始解析参数：optind = %d\n", optind);
         int num = 0;
         switch (ch) 
         {
+        case 'O':
+            printf("Operation: OFFSET\n");
+            operation = Offset;
+            timeInSec = 0;
+            break;
+        case 'G':
+            printf("Operation: GENERATE TBTD\n");
+            operation = Generate;
+            break;
+        case 'L':
+            printf("Operation: LOOKUP\n");
+            operation = Lookup;
+            timeInSec = -1;
+            break;
+        case 'R':
+            printf("Operation: REPLACE\n");
+            operation = Replace;
+            break;
+        case 'C':
+            printf("Operation: COPY\n");
+            operation = Copy;
+            timeInSec = 0;
+            break;
         case 'r':
             printf("Input File Path: \"%s\"\n", optarg);
             inPath = optarg;
@@ -63,11 +86,6 @@ int main(int argc, char **argv)
         case 'w':
             printf("Output File Path: \"%s\"\n", optarg);
             outPath = optarg;
-            break;
-        case 'o':
-            printf("Operation: OFFSET\n");
-            operation = Offset;
-            timeInSec = 0;
             break;
         case 's':
             switch (optarg[0])
@@ -135,10 +153,6 @@ int main(int argc, char **argv)
                 printf("   (null)");
             printf("\n");
             break;
-        case 'g':
-            printf("Operation: GENERATE TBTD\n");
-            operation = Generate;
-            break;
         case 'c':
             srcCsvFile = std::ifstream(optarg);
             printf("    TBTD Input File Path: \"%s\"\n", optarg);
@@ -160,11 +174,6 @@ int main(int argc, char **argv)
         case 'a':
             printf("Aliases File Path: \"%s\"\n", optarg);
             aliasPath = optarg;
-            break;
-        case 'l':
-            printf("Operation: LOOKUP\n");
-            operation = Lookup;
-            timeInSec = -1;
             break;
         case 'd':
             tbtdCsvFile = std::ifstream(optarg);
@@ -189,7 +198,7 @@ int main(int argc, char **argv)
         if (inPath.empty() || outPath.empty())
         {
             printf("Error: Input or output file path not set!\nExiting...\n");
-            return 0;
+            break;
         }
         if (aliasPath.empty())
         {
@@ -202,7 +211,7 @@ int main(int argc, char **argv)
         }
         if (IDs.empty())
         {
-            printf("Error: You didn't specify which lines to offset, defaulting to all lines...\n");
+            printf("Error: You didn't specify which lines to offset!\nExiting...\n");
             break;
         }
         luaio.Read(IDs);
@@ -223,10 +232,10 @@ int main(int argc, char **argv)
         luaio.Write(IDs);
         break;
     case Generate:
-        if (inPath.empty() || outPath.empty())
+        if (inPath.empty())
         {
-            printf("Error: Input or output file path not set!\nExiting...\n");
-            return 0;
+            printf("Error: Input file path not set!\nExiting...\n");
+            break;
         }
         if (aliasPath.empty())
         {
@@ -270,19 +279,58 @@ int main(int argc, char **argv)
             }
         }
         break;
+    case Replace:
+        if (inPath.empty())
+        {
+            printf("Error: Input file path not set!\nExiting...\n");
+            break;
+        }
+        if (aliasPath.empty())
+        {
+            printf("Warning: Alias file not specified!\n");
+        }
+        else
+        {
+            std::ifstream aliasFile(aliasPath);
+            luaio.tt.ReadAlias(aliasFile);
+        }
+        luaio.Read(luaio.tt.GetIDs(srcCsvFile));
+        srcCsvFile.clear();
+        srcCsvFile.seekg(0);
+        luaio.tt.ReplaceWithCsv(srcCsvFile);
+        luaio.Write(IDs);
+        break;
+    case Copy:
+        if (aliasPath.empty())
+        {
+            printf("Warning: Alias file not specified!\n");
+        }
+        else
+        {
+            std::ifstream aliasFile(aliasPath);
+            luaio.tt.ReadAlias(aliasFile);
+        }
+        if (timeInSec < 60 || 3600 % timeInSec)
+        {
+            printf("Error: Invalid time interval! It has to be a factor of 3600 and bigger than 60.\n"
+                   "Exiting...\n");
+            break;
+        }
+        luaio.tt.CopyTBTDTimes(IDs, srcCsvFile, dstCsvFile, timeInSec);
+        break;
     case Help:
         break;
     }
 
-    // ./build/TPF2-Timetables-Helper -r "./input.lua" -w "./output.lua" -a "./aliases.csv" -o -t 1 -s ad -i 123
+    // ./build/TPF2-Timetables-Helper -O -r "./input.lua" -w "./output.lua" -a "./aliases.csv" -t 1 -s ad -i 288194
 
-    // ./build/TPF2-Timetables-Helper -r "./input.lua" -w "./output.lua" -a "./aliases.csv" -g -c "./input.csv" -v "./output.csv"
+    // ./build/TPF2-Timetables-Helper -G -r "./input.lua" -a "./aliases.csv" -c "./input.csv" -v "./output.csv"
 
-    // ./build/TPF2-Timetables-Helper -q -l -d "./output.csv" -i 288194,216714,145798 -t 1500
+    // ./build/TPF2-Timetables-Helper -q -L -d "./output.csv" -i 288194,216714,145798 -t 1500
 
-    // ./build/TPF2-Timetables-Helper -q -l -d "./output.csv" -i 295838,221516,216714 -t 1500
+    // ./build/TPF2-Timetables-Helper -R -r "./input.lua" -w "./output.lua" -a "./aliases.csv" -c "./input.csv"
 
-    // ./build/TPF2-Timetables-Helper -q -l -d "./output.csv" -i 334678,281440,155237 -t 1500
+    // ./build/TPF2-Timetables-Helper -C -a "./aliases.csv" -c "./input.csv" -v "./output.csv" -i 288194 -t 120
 
     printf("Program finished.\n");
 
