@@ -8,7 +8,7 @@ std::vector<int> TimeTable::GetIDs(std::ifstream &ifs)
     std::vector<std::string> cells;
 
     // get a line
-    std::getline(ifs, text);
+    StringHelper::GetLine(ifs, text);
     cells = StringHelper::GetCellsFromLine(text);
     while (cells.size() == 1)
     {
@@ -34,7 +34,7 @@ std::vector<int> TimeTable::GetIDs(std::ifstream &ifs)
 
         do
         {
-            std::getline(ifs, text);
+            StringHelper::GetLine(ifs, text);
             cells = StringHelper::GetCellsFromLine(text);
         } while (cells.size() > 1);
     }
@@ -64,7 +64,7 @@ void TimeTable::ReadFromFile(std::ifstream &ifs,
     // try to find the start of timetable block
     while (true)
     {
-        std::getline(ifs, text);
+        StringHelper::GetLine(ifs, text);
         if (text == "\t\ttimetable = {")
             break;
         before << text << '\n';
@@ -72,7 +72,7 @@ void TimeTable::ReadFromFile(std::ifstream &ifs,
 
     // read timetable block
     // read LINE block
-    std::getline(ifs, text); // ["109701"] = {
+    StringHelper::GetLine(ifs, text); // ["109701"] = {
     while (text != "\t\t},") // ends reading a TIMETABLE (LINES) block
     {
         // construct a LINE
@@ -82,41 +82,41 @@ void TimeTable::ReadFromFile(std::ifstream &ifs,
         {
             while (text != "\t\t\t\t},") // ends reading a STATIONS block
             {
-                std::getline(ifs, text);
+                StringHelper::GetLine(ifs, text);
                 newLine.rawStrings.push_back(text);
             }
         }
         else
         {
             // read "hasTimetable" attribute
-            std::getline(ifs, text); // hasTimetable = true,
+            StringHelper::GetLine(ifs, text); // hasTimetable = true,
             newLine.SetAttribute(Line::Attr_hasTimeTable, StringHelper::GetBoolFromString(text));
 
             // read stations block
-            std::getline(ifs, text); // stations = {
+            StringHelper::GetLine(ifs, text); // stations = {
             // read station
-            std::getline(ifs, text); // {
+            StringHelper::GetLine(ifs, text); // {
             while (text != "\t\t\t\t},") // ends reading a STATIONS block
             {
                 // construct a STATION
                 Station newStation;
 
                 // read conditions block
-                std::getline(ifs, text); // conditions = {
-                std::getline(ifs, text); // ArrDep | debounce | None | type
+                StringHelper::GetLine(ifs, text); // conditions = {
+                StringHelper::GetLine(ifs, text); // ArrDep | debounce | None | type
                 while (text != "\t\t\t\t\t\t},") // ends reading a CONDITION block
                 {
                     // analyze format
                     if (text.back() == '{') // breaking line (ArrDep)
                     {
                         // get time
-                        std::getline(ifs, text); // { 42, 15, 42, 35, },
+                        StringHelper::GetLine(ifs, text); // { 42, 15, 42, 35, },
                         while (text != "\t\t\t\t\t\t\t},") // ends reading a TIME block
                         {
                             // read
                             newStation.AppendArrDepTime(StringHelper::GetArrDepTimeFromString(text));
                             // get new time
-                            std::getline(ifs, text); // { 42, 15, 42, 35, },
+                            StringHelper::GetLine(ifs, text); // { 42, 15, 42, 35, },
                         }
                     }
                     // else: one liner (Others)
@@ -133,32 +133,32 @@ void TimeTable::ReadFromFile(std::ifstream &ifs,
                         break;
                     }
                     // get new line for analyze
-                    std::getline(ifs, text); // ArrDep | debounce | None | type
+                    StringHelper::GetLine(ifs, text); // ArrDep | debounce | None | type
                 }
                 // read "inboundTime" attribute
-                std::getline(ifs, text); // inboundTime = 0,
+                StringHelper::GetLine(ifs, text); // inboundTime = 0,
                 newStation.SetAttribute(Station::Attr_inboundTime, StringHelper::GetIntFromString(text));
                 // read "stationID" attribute
-                std::getline(ifs, text); // stationID = 155237,
+                StringHelper::GetLine(ifs, text); // stationID = 155237,
                 newStation.SetAttribute(Station::Attr_stationID, StringHelper::GetIntFromString(text));
                 // add STATION to LINE
                 newLine.AddStation(newStation);
                 // read next STATION
-                std::getline(ifs, text); // },
-                std::getline(ifs, text); // {
+                StringHelper::GetLine(ifs, text); // },
+                StringHelper::GetLine(ifs, text); // {
             }
         }
         // add LINE to TT
         AddLine(newLine);
         // read next LINE
-        std::getline(ifs, text); // },
-        std::getline(ifs, text); // ["109701"] = {
+        StringHelper::GetLine(ifs, text); // },
+        StringHelper::GetLine(ifs, text); // ["109701"] = {
     }
 
     // write remainder of file
     while (true)
     {
-        std::getline(ifs, text);
+        StringHelper::GetLine(ifs, text);
         if (text.empty())
             break;
         after << text << '\n';
@@ -331,7 +331,7 @@ void TimeTable::ReadAlias(std::ifstream &ifs)
     {
         std::string text;
         std::vector<std::string> cells;
-        std::getline(ifs, text);
+        StringHelper::GetLine(ifs, text);
         
         if (text.empty())
             break;
@@ -362,7 +362,7 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
     std::vector<std::string> cells;
 
     // get a line
-    std::getline(ifs, text);
+    StringHelper::GetLine(ifs, text);
     cells = StringHelper::GetCellsFromLine(text);
     while (cells.size() == 1)
     {
@@ -402,7 +402,7 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
             return;
         
         // get stations
-        std::getline(ifs, text);
+        StringHelper::GetLine(ifs, text);
         cells = StringHelper::GetCellsFromLine(text);
         
         // find refrence trip
@@ -443,7 +443,7 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
             indexes.push_back(timeIDX);
 
             // get next station
-            std::getline(ifs, text);
+            StringHelper::GetLine(ifs, text);
             cells = StringHelper::GetCellsFromLine(text);
         }
         trips.push_back(indexes);
@@ -490,7 +490,7 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
     std::vector<std::vector<std::string>> table;
 
     // get line with certain id
-    std::getline(ifs, text);
+    StringHelper::GetLine(ifs, text);
     cells = StringHelper::GetCellsFromLine(text);
     while (cells.size() != 1 ||
         ((isdigit(cells[0][0]) && stoi(cells[0]) != lineID) &&
@@ -502,7 +502,7 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
                 "Exiting...\n", lineID);
             return ArrDepTime(0, 0);
         }
-        std::getline(ifs, text);
+        StringHelper::GetLine(ifs, text);
         cells = StringHelper::GetCellsFromLine(text);
     }
 
@@ -516,14 +516,14 @@ ArrDepTime TimeTable::LookupTBTD(std::ifstream &ifs, int lineID, int origID, int
     
     std::vector<std::vector<STATION>> loops;
 
-    std::getline(ifs, text);
+    StringHelper::GetLine(ifs, text);
     cells = StringHelper::GetCellsFromLine(text);
     while (cells.size() >= 6)
     {
         // add to table
         table.push_back(cells);
         // get next station
-        std::getline(ifs, text);
+        StringHelper::GetLine(ifs, text);
         cells = StringHelper::GetCellsFromLine(text);
     }
 
@@ -619,7 +619,7 @@ void TimeTable::ReplaceWithCsv(std::ifstream &ifs)
     std::vector<std::string> cells;
 
     // get a line
-    std::getline(ifs, text);
+    StringHelper::GetLine(ifs, text);
     cells = StringHelper::GetCellsFromLine(text);
     while (cells.size() == 1)
     {
@@ -655,7 +655,7 @@ void TimeTable::ReplaceWithCsv(std::ifstream &ifs)
         line.stations.clear();
 
         // get stations
-        std::getline(ifs, text);
+        StringHelper::GetLine(ifs, text);
         cells = StringHelper::GetCellsFromLine(text);
 
         // update time info at each station
@@ -688,7 +688,7 @@ void TimeTable::ReplaceWithCsv(std::ifstream &ifs)
             line.AddStation(newStation);
 
             // get next station
-            std::getline(ifs, text);
+            StringHelper::GetLine(ifs, text);
             cells = StringHelper::GetCellsFromLine(text);
         }
     }
@@ -703,9 +703,9 @@ void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, s
     std::vector<std::string> cells;
 
     // get a line
-    std::getline(ifs, text);
+    StringHelper::GetLine(ifs, text);
     cells = StringHelper::GetCellsFromLine(text);
-    while (cells.size() == 1)
+    while (!ifs.eof() && cells.size() == 1)
     {
         if (cells[0] == "")
             break;
@@ -728,7 +728,7 @@ void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, s
         {
             do
             {
-                std::getline(ifs, text);
+                StringHelper::GetLine(ifs, text);
                 cells = StringHelper::GetCellsFromLine(text);
             } while (cells.size() > 1);
             continue;
@@ -738,7 +738,7 @@ void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, s
         //printf("\"%s\"\n", cells[0].c_str());
 
         // get a line
-        std::getline(ifs, text);
+        StringHelper::GetLine(ifs, text);
         cells = StringHelper::GetCellsFromLine(text);
 
         while (cells.size() > 1)
@@ -764,7 +764,7 @@ void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, s
             }
 
             // get a line
-            std::getline(ifs, text);
+            StringHelper::GetLine(ifs, text);
             cells = StringHelper::GetCellsFromLine(text);
         }
     }

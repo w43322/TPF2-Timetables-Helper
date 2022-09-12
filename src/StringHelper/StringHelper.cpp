@@ -1,5 +1,16 @@
 #include "StringHelper.h"
 
+void StringHelper::GetLine(std::ifstream &ifs, std::string &str)
+{
+    if (ifs.eof())
+    {
+        str.clear();
+    }
+    else
+    {
+        std::getline(ifs, str);
+    }
+}
 int StringHelper::GetIntFromString(std::string str)
 {
     str = str.substr(str.find('=') + 2);
