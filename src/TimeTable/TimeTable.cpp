@@ -30,7 +30,6 @@ std::vector<int> TimeTable::GetIDs(std::ifstream &ifs)
             id = aliases.at(cells[0]);
         }
 
-        printf("push:%d\n", id);
         res.push_back(id);
 
         do
@@ -667,13 +666,13 @@ void TimeTable::ReplaceWithCsv(std::ifstream &ifs)
 
             // get index
             int stationID = std::stoi(cells[0]);
-            printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
+            /*printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
                 cells[0].c_str(),
                 cells[1].c_str(),
                 cells[2].c_str(),
                 cells[3].c_str(),
                 cells[4].c_str(),
-                cells[5].c_str());
+                cells[5].c_str());*/
             newStation.SetAttribute(Station::Attr_conditionType, Station::Type_ArrDep);
             newStation.SetAttribute(Station::Attr_inboundTime, 0);
             newStation.SetAttribute(Station::Attr_stationID, stationID);

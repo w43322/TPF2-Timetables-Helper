@@ -247,9 +247,9 @@ int main(int argc, char **argv)
             luaio.tt.ReadAlias(aliasFile);
         }
         IDs = luaio.tt.GetIDs(srcCsvFile);
-        luaio.Read(IDs);
         srcCsvFile.clear();
         srcCsvFile.seekg(0);
+        luaio.Read(IDs);
         luaio.tt.GenerateTBTD(srcCsvFile, dstCsvFile);
         break;
     case Lookup:
@@ -296,9 +296,9 @@ int main(int argc, char **argv)
             luaio.tt.ReadAlias(aliasFile);
         }
         IDs = luaio.tt.GetIDs(srcCsvFile);
-        luaio.Read(IDs);
         srcCsvFile.clear();
         srcCsvFile.seekg(0);
+        luaio.Read(IDs);
         luaio.tt.ReplaceWithCsv(srcCsvFile);
         luaio.Write(IDs);
         break;
