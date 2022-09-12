@@ -741,7 +741,7 @@ void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, s
         std::getline(ifs, text);
         cells = StringHelper::GetCellsFromLine(text);
 
-        while (cells.size() == 6)
+        while (cells.size() > 1)
         {
             ofs << cells[0] << "," << cells[1] << ",";
             /*printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
@@ -751,14 +751,17 @@ void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, s
                 cells[3].c_str(),
                 cells[4].c_str(),
                 cells[5].c_str());*/
-            Time arr(std::stoi(cells[2]), std::stoi(cells[3]));
-            Time dep(std::stoi(cells[4]), std::stoi(cells[5]));
-            for (int i = 0; i < 3600; i += interval, arr = arr + interval, dep = dep + interval)
+            for (int j = 5, siz = cells.size(); j < siz; j += 4)
             {
-                ofs << arr.mm << ',' << arr.ss << ',';
-                ofs << dep.mm << ',' << dep.ss << ',';
+                Time arr(std::stoi(cells[j - 3]), std::stoi(cells[j - 2]));
+                Time dep(std::stoi(cells[j - 1]), std::stoi(cells[j]));
+                for (int i = 0; i < 3600; i += interval, arr = arr + interval, dep = dep + interval)
+                {
+                    ofs << arr.mm << ',' << arr.ss << ',';
+                    ofs << dep.mm << ',' << dep.ss << ',';
+                }
+                ofs << '\n';
             }
-            ofs << '\n';
 
             // get a line
             std::getline(ifs, text);
