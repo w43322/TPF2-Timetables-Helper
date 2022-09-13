@@ -754,6 +754,10 @@ void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, s
                 cells[3].c_str(),
                 cells[4].c_str(),
                 cells[5].c_str());*/
+            if (cells.size() < 6)
+            {
+                ofs << '\n';
+            }
             for (int j = 5, siz = cells.size(); j < siz; j += 4)
             {
                 Time arr(std::stoi(cells[j - 3]), std::stoi(cells[j - 2]));
