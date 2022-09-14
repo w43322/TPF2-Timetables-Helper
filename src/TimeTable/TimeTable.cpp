@@ -406,7 +406,7 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
         cells = StringHelper::GetCellsFromLine(text);
         
         // find refrence trip
-        while (cells.size() == 6)
+        while (cells.size() >= 2)
         {
             // get index
             int stationID = std::stoi(cells[0]);
@@ -420,10 +420,10 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
                 cells[5].c_str());*/
             line.GetIndex(stationID, staIDX, timeIDX,
                     ArrDepTime(
-                        std::stoi(cells[2]),
-                        std::stoi(cells[3]),
-                        std::stoi(cells[4]),
-                        std::stoi(cells[5])));
+                        ((cells.size() == 6) ? std::stoi(cells[2]) : 0),
+                        ((cells.size() == 6) ? std::stoi(cells[3]) : 0),
+                        ((cells.size() == 6) ? std::stoi(cells[4]) : 0),
+                        ((cells.size() == 6) ? std::stoi(cells[5]) : 0)));
 
             if (staIDX == -1)
             {
@@ -434,11 +434,16 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
             tripStations.push_back(staIDX);
             line.stations[staIDX].name = cells[1];
 
-            if (timeIDX == -1)
+            if (cells.size() == 6 && timeIDX == -1)
             {
                 printf("Error: ArrDepTime not found in station %d!\n"
                     "Exiting...\n", stationID);
                 return;
+            }
+
+            if (cells.size() == 2)
+            {
+                printf("Warning: ArrDepTime not found in station %d!\n", stationID);
             }
             indexes.push_back(timeIDX);
 
@@ -453,6 +458,8 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
         {
             for (auto &&idx : indexes)
             {
+                if (idx == -1)
+                    continue;
                 ++idx;
                 if (idx == timSiz)
                     idx = 0;
@@ -472,6 +479,8 @@ void TimeTable::GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs)
             for (auto &&trip : trips) // num. elem in trips: stations
             {
                 auto &&timeIDX = trip[i];
+                if (timeIDX == -1)
+                    continue;
                 //ofs << timeIDX << ',';
                 ofs << station.arrdepTimes[timeIDX].arr.mm << ',';
                 ofs << station.arrdepTimes[timeIDX].arr.ss << ',';
