@@ -706,7 +706,7 @@ void TimeTable::ReplaceWithCsv(std::ifstream &ifs)
     }
 }
 
-void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, std::ofstream &ofs, int interval)
+void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, std::ofstream &ofs, const int interval)
 {
     // hash map for look up
     std::unordered_set<int> hashTableIDs(IDs.begin(), IDs.end());
@@ -763,21 +763,22 @@ void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, s
                 cells[3].c_str(),
                 cells[4].c_str(),
                 cells[5].c_str());*/
-            if (cells.size() < 6)
-            {
-                ofs << '\n';
-            }
+            std::vector<ArrDepTime> adts;
             for (int j = 5, siz = cells.size(); j < siz; j += 4)
             {
-                Time arr(std::stoi(cells[j - 3]), std::stoi(cells[j - 2]));
-                Time dep(std::stoi(cells[j - 1]), std::stoi(cells[j]));
+                adts.push_back(ArrDepTime(std::stoi(cells[j - 3]), std::stoi(cells[j - 2]), std::stoi(cells[j - 1]), std::stoi(cells[j])));
+            }
+            for (auto &&adt : adts)
+            {
+                Time arr = adt.arr;
+                Time dep = adt.dep;
                 for (int i = 0; i < 3600; i += interval, arr = arr + interval, dep = dep + interval)
                 {
                     ofs << arr.mm << ',' << arr.ss << ',';
                     ofs << dep.mm << ',' << dep.ss << ',';
                 }
-                ofs << '\n';
             }
+            ofs << '\n';
 
             // get a line
             StringHelper::GetLine(ifs, text);
