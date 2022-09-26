@@ -40,10 +40,12 @@ std::vector<int> TimeTable::GetIDs(std::ifstream &ifs)
     }
     return res;
 }
+
 void TimeTable::AddLine(const Line& line)
 {
     lines.insert(std::make_pair(line.lineID, line));
 }
+
 void TimeTable::ReadFromFile(std::ifstream &ifs,
                         const std::vector<int> IDs,
                         std::stringstream &before,
@@ -164,6 +166,7 @@ void TimeTable::ReadFromFile(std::ifstream &ifs,
         after << text << '\n';
     }
 }
+
 void TimeTable::OutputToFile(std::ofstream &ofs,
                     const std::vector<int> IDs,
                     const std::stringstream &before,
@@ -277,44 +280,6 @@ void TimeTable::OutputToFile(std::ofstream &ofs,
     ofs << "\t\t},\n";
 
     ofs << after.str();
-}
-void TimeTable::Offset(const std::vector<int> &lineIDs,
-                    int seconds,
-                    OffsetSelect sel)
-{
-    if(!lineIDs.empty()) for (auto &&id : lineIDs)
-    {
-        if (lines.find(id) == lines.end())
-        {
-            printf("Warning: Line ID %d not found, skipping...\n", id);
-            continue;
-        }
-        auto &&line = lines.at(id);
-        for (auto &&station : line.stations)
-        {
-            for (auto &&tim : station.arrdepTimes)
-            {
-                if (sel & 0b01) // Arr
-                    tim.arr = tim.arr + seconds;
-                if (sel & 0b10) // Deo
-                    tim.dep = tim.dep + seconds;
-            }
-        }
-    }
-    else for (auto &&_line : lines)
-    {
-        auto &&line = _line.second;
-        for (auto &&station : line.stations)
-        {
-            for (auto &&tim : station.arrdepTimes)
-            {
-                if (sel & 0b01) // Arr
-                    tim.arr = tim.arr + seconds;
-                if (sel & 0b10) // Deo
-                    tim.dep = tim.dep + seconds;
-            }
-        }
-    }
 }
 
 void TimeTable::ReadAlias(std::ifstream &ifs)
@@ -777,6 +742,98 @@ void TimeTable::CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, s
                     ofs << arr.mm << ',' << arr.ss << ',';
                     ofs << dep.mm << ',' << dep.ss << ',';
                 }
+            }
+            ofs << '\n';
+
+            // get a line
+            StringHelper::GetLine(ifs, text);
+            cells = StringHelper::GetCellsFromLine(text);
+        }
+    }
+
+    if (!hashTableIDs.empty())
+    {
+        printf("Warning: The following IDs are not present in the specified input csv file:\n    ");
+        for (auto &&x : hashTableIDs)
+        {
+            printf("%10d,", x);
+        }
+        printf("\n");
+    }
+}
+
+void TimeTable::OffsetTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, std::ofstream &ofs, const int seconds, const OffsetSelect sel)
+{
+    // hash map for look up
+    std::unordered_set<int> hashTableIDs(IDs.begin(), IDs.end());
+
+    std::string text;
+    std::vector<std::string> cells;
+
+    // get a line
+    StringHelper::GetLine(ifs, text);
+    cells = StringHelper::GetCellsFromLine(text);
+    while (!ifs.eof() && cells.size() == 1)
+    {
+        if (cells[0] == "")
+            break;
+
+        int id;
+        if (isdigit(cells[0][0]))
+            id = std::stoi(cells[0]);
+        else
+        {
+            std::transform(cells[0].begin(), cells[0].end(), cells[0].begin(), ::tolower);
+            if (aliases.find(cells[0]) == aliases.end())
+            {
+                printf("Error: \"%s\" is not a valid alias!\n"
+                    "Exiting...\n", cells[0].c_str());
+                return;
+            }
+            id = aliases.at(cells[0]);
+        }
+        if (hashTableIDs.find(id) == hashTableIDs.end())
+        {
+            do
+            {
+                StringHelper::GetLine(ifs, text);
+                cells = StringHelper::GetCellsFromLine(text);
+            } while (cells.size() > 1);
+            continue;
+        }
+        hashTableIDs.erase(id);
+        ofs << id << ",\n";
+        //printf("\"%s\"\n", cells[0].c_str());
+
+        // get a line
+        StringHelper::GetLine(ifs, text);
+        cells = StringHelper::GetCellsFromLine(text);
+
+        while (cells.size() > 1)
+        {
+            ofs << cells[0] << "," << cells[1] << ",";
+            /*printf("\"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
+                cells[0].c_str(),
+                cells[1].c_str(),
+                cells[2].c_str(),
+                cells[3].c_str(),
+                cells[4].c_str(),
+                cells[5].c_str());*/
+            std::vector<ArrDepTime> adts;
+            for (int j = 5, siz = cells.size(); j < siz; j += 4)
+            {
+                adts.push_back(ArrDepTime(std::stoi(cells[j - 3]), std::stoi(cells[j - 2]), std::stoi(cells[j - 1]), std::stoi(cells[j])));
+            }
+            for (auto &&adt : adts)
+            {
+                Time arr = adt.arr;
+                Time dep = adt.dep;
+                if (sel & 0b01) // Arr
+                    arr = arr + seconds;
+                if (sel & 0b10) // Deo
+                    dep = dep + seconds;
+                ofs << arr.mm << ',' << arr.ss << ',';
+                ofs << dep.mm << ',' << dep.ss << ',';
             }
             ofs << '\n';
 

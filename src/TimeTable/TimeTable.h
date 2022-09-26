@@ -27,14 +27,12 @@ public:
                     const std::vector<int> IDs,
                     const std::stringstream &before,
                     const std::stringstream &after);
-    void Offset(const std::vector<int> &lineIDs,
-                int seconds,
-                OffsetSelect sel);
     void ReadAlias(std::ifstream &ifs);
     void GenerateTBTD(std::ifstream &ifs, std::ofstream &ofs);
     ArrDepTime LookupTBTD(std::ifstream &ifs, int lineID, int origID, int destID, int startTime);
     void ReplaceWithCsv(std::ifstream &ifs);
     void CopyTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, std::ofstream &ofs, int interval);
+    void OffsetTBTDTimes(const std::vector<int> &IDs, std::ifstream &ifs, std::ofstream &ofs, const int interval, const OffsetSelect sel);
 };
 
 #endif

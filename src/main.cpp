@@ -195,11 +195,6 @@ int main(int argc, char **argv)
     switch (operation)
     {
     case Offset:
-        if (inPath.empty() || outPath.empty())
-        {
-            printf("Error: Input or output file path not set!\nExiting...\n");
-            break;
-        }
         if (aliasPath.empty())
         {
             printf("Warning: Alias file not specified!\n");
@@ -209,12 +204,6 @@ int main(int argc, char **argv)
             std::ifstream aliasFile(aliasPath);
             luaio.tt.ReadAlias(aliasFile);
         }
-        if (IDs.empty())
-        {
-            printf("Error: You didn't specify which lines to offset!\nExiting...\n");
-            break;
-        }
-        luaio.Read(IDs);
         if (offsetSelect == TimeTable::Select_None)
         {
             printf("Error: Offset mode not selected!\n    "
@@ -227,9 +216,7 @@ int main(int argc, char **argv)
                 "Use \"-t xx\" to select offset mode, \"-h\" for more info.\nExiting...\n");
             break;
         }
-        luaio.tt.Offset(IDs, timeInSec, offsetSelect);
-        printf("Writing to specified output file...\n");
-        luaio.Write(IDs);
+        luaio.tt.OffsetTBTDTimes(IDs, srcCsvFile, dstCsvFile, timeInSec, offsetSelect);
         break;
     case Generate:
         if (inPath.empty())
@@ -324,7 +311,7 @@ int main(int argc, char **argv)
         break;
     }
 
-    // ./build/TPF2-Timetables-Helper -O -r "./input.lua" -w "./output.lua" -a "./aliases.csv" -t 1 -s ad -i 288194
+    // ./build/TPF2-Timetables-Helper -O -a "./aliases.csv" -c "./input.csv" -v "./output.csv" -i 288194 -t 5 -s ad
 
     // ./build/TPF2-Timetables-Helper -G -r "./input.lua" -a "./aliases.csv" -c "./input.csv" -v "./output.csv"
 
